@@ -45,6 +45,7 @@ pub enum Stage {
     Bag,
     BagCleanup,
     SignIn,
+    SignInLoading,
     Fulfillment,
     PickupContact,
     Billing,
@@ -59,6 +60,7 @@ impl Stage {
             Stage::Bag => "购物袋",
             Stage::BagCleanup => "清理购物袋",
             Stage::SignIn => "登录",
+            Stage::SignInLoading => "登录页面加载",
             Stage::Fulfillment => "选择取货门店",
             Stage::PickupContact => "取货信息",
             Stage::Billing => "付款方式",
@@ -84,10 +86,7 @@ impl CheckoutError {
 
     /// 提交按钮可能已经送出请求，此时关闭页面并重试会有重复下单的风险。
     fn can_retry(&self) -> bool {
-        !matches!(
-            self.stage,
-            Stage::PlaceOrder | Stage::BagCleanup | Stage::SignIn
-        )
+        !matches!(self.stage, Stage::PlaceOrder | Stage::SignIn)
     }
 }
 
@@ -573,7 +572,6 @@ struct Flow<'a> {
     store_title: String,
     /// 只在初始空袋准备加购，或袋中已恰好为本次型号时接管清理。
     owns_bag: bool,
-    remove_id: String,
 }
 
 impl Flow<'_> {
@@ -779,13 +777,14 @@ impl Flow<'_> {
             }
             tokio::time::sleep(Duration::from_millis(300)).await;
         }
-        Err(fail(
-            "等待 Apple 登录完成超时，已保留页面，请检查验证码或账户验证".into(),
+        Err(CheckoutError::new(
+            Stage::SignInLoading,
+            "等待 Apple 登录完成超时，将清理购物袋后等待下次到货重试",
         ))
     }
 
     async fn login_context(&mut self) -> Result<Option<u64>, CheckoutError> {
-        let fail = || CheckoutError::new(Stage::SignIn, "无法读取 Apple 登录页面，已保留页面");
+        let fail = || CheckoutError::new(Stage::SignInLoading, "暂时无法读取 Apple 登录页面");
         let tree = self
             .session
             .command("Page.getFrameTree", json!({}))
@@ -841,11 +840,11 @@ impl Flow<'_> {
             "functionDeclaration":format!("function(expected, action) {{ return ({})(expected, action); }}", include_str!("checkout_sign_in.js")),
             "arguments":[{"value":{"account":account,"password":password}},{"value":action}],
             "returnByValue":true,
-        })).await.map_err(|_| CheckoutError::new(Stage::SignIn, "登录页面发生变化，已保留页面，请检查登录结果"))?;
+        })).await.map_err(|_| CheckoutError::new(Stage::SignInLoading, "登录页面发生变化，将重新确认页面状态"))?;
         if result.get("exceptionDetails").is_some() {
             return Err(CheckoutError::new(
-                Stage::SignIn,
-                "登录控件未能操作，已保留页面",
+                Stage::SignInLoading,
+                "登录控件暂时无法操作",
             ));
         }
         Ok(result
@@ -939,7 +938,6 @@ impl Flow<'_> {
                 )
             })?;
             self.owns_bag = true;
-            self.remove_id = initial.items[0].remove_id.clone();
             self.report("自动加购：购物袋已恰好为本次到货型号，沿用 1 件");
             return Ok(());
         }
@@ -1017,7 +1015,6 @@ impl Flow<'_> {
         }
         let lines = self.read_bag(Stage::Bag).await?;
         self.verify_auto_bag(&lines)?;
-        self.remove_id = lines.items[0].remove_id.clone();
         self.report(format!(
             "自动加购：已确认 {} 1 件，购物袋无其他商品",
             self.plan.product_name
@@ -1028,41 +1025,72 @@ impl Flow<'_> {
     async fn cleanup_bag(&mut self) -> Result<(), CheckoutError> {
         let stage = Stage::BagCleanup;
         self.report("自动加购：本次结账失败，清理本次购物袋");
-        let lines = self.read_bag(stage).await?;
-        if lines.bag_empty {
-            self.report("自动加购：已确认购物袋为空");
-            return Ok(());
-        }
-        let script = bag_action_js(
-            self.plan,
-            include_str!("checkout_remove_from_bag.js"),
-            "remove",
-            &self.remove_id,
-        );
-        let removed: bool = self
-            .read(&script)
-            .await
-            .map_err(|e| CheckoutError::new(stage, e))?;
-        if !removed {
-            return Err(CheckoutError::new(
-                stage,
-                "购物袋内容发生变化或无法确认移除按钮，未删除其他商品，请手动检查",
-            ));
-        }
-        self.wait(
-            stage,
-            LINE_ITEMS_JS,
-            ELEMENT_TIMEOUT,
-            "本次商品移除且购物袋为空",
-            |s: &Lines| s.bag_ready && s.bag_empty,
-        )
-        .await?;
-        // 再次读取服务端页面，不能只凭前端移除动画认定清理完成。
-        if !self.read_bag(stage).await?.bag_empty {
-            return Err(CheckoutError::new(
-                stage,
-                "刷新后购物袋仍有商品，请手动检查",
-            ));
+        let mut lines = self.read_bag(stage).await?;
+        let deadline = Instant::now() + NAVIGATION_TIMEOUT;
+        let mut changed = false;
+        loop {
+            if let Some(item) = lines.items.first() {
+                if item.remove_id.is_empty() || Instant::now() >= deadline {
+                    return Err(CheckoutError::new(
+                        stage,
+                        "购物袋条目尚不可移除，下次先继续清理",
+                    ));
+                }
+                let previous_count = lines.items.len();
+                let item = item.clone();
+                let action = |action: &str| {
+                    format!(
+                        "JSON.stringify(({})({},{}))",
+                        include_str!("checkout_remove_from_bag.js"),
+                        json!({"partNumber": item.part_number, "productName": item.name,
+                        "quantity": item.quantity, "removeId": item.remove_id}),
+                        js_string(action),
+                    )
+                };
+                self.wait(
+                    stage,
+                    &action("ready"),
+                    deadline.saturating_duration_since(Instant::now()),
+                    "购物袋条目可移除",
+                    |ready: &bool| *ready,
+                )
+                .await?;
+                self.report(format!(
+                    "自动加购：移除失败购物袋中的「{}」（数量 {}）",
+                    item.name, item.quantity
+                ));
+                let removed: bool = self
+                    .read(&action("remove"))
+                    .await
+                    .map_err(|e| CheckoutError::new(stage, e))?;
+                if !removed {
+                    return Err(CheckoutError::new(
+                        stage,
+                        "购物袋条目发生变化，下次重新读取后继续清理",
+                    ));
+                }
+                // Apple 先隐藏删除按钮，再移除整行，必须等条目数减少。
+                lines = self
+                    .wait(
+                        stage,
+                        LINE_ITEMS_JS,
+                        deadline.saturating_duration_since(Instant::now()),
+                        "购物袋条目移除完成",
+                        |s: &Lines| s.bag_ready && s.items.len() < previous_count,
+                    )
+                    .await?;
+                changed = true;
+            } else if changed {
+                lines = self.read_bag(stage).await?;
+                changed = false;
+            } else if lines.bag_empty {
+                break;
+            } else {
+                return Err(CheckoutError::new(
+                    stage,
+                    "未能确认购物袋为空，下次先继续清理",
+                ));
+            }
         }
         self.report("自动加购：本次商品已移除，已确认购物袋为空");
         Ok(())
@@ -1679,6 +1707,10 @@ impl Flow<'_> {
 pub struct CheckoutRunner {
     session: Arc<Mutex<Option<ChromiumSession>>>,
     reserved: Arc<AtomicBool>,
+    /// 清理结果未确认前，下一次必须先清理，不能沿用失败商品或叠加加购。
+    cleanup_pending: Arc<AtomicBool>,
+    /// 账户验证失败后只观察保留页面，不跨轮次重复提交密码。
+    login_blocked: Arc<AtomicBool>,
 }
 
 /// 从到货事件分派直到结果写回设置都占住名额，避免多型号同时到货时排队下两单。
@@ -1732,10 +1764,13 @@ impl CheckoutRunner {
         let session = Self::ensure(&mut slot).await?;
         let browser_error =
             |e: apw_core::apple::ApiError| CheckoutError::new(Stage::Browser, e.to_string());
-        session
-            .command("Page.navigate", json!({ "url": BAG_URL }))
-            .await
-            .map_err(browser_error)?;
+        // 等待验证码时保留当前页面，打开按钮只把它带到前台。
+        if !self.login_blocked.load(Ordering::Acquire) {
+            session
+                .command("Page.navigate", json!({ "url": BAG_URL }))
+                .await
+                .map_err(browser_error)?;
+        }
         session
             .command("Page.bringToFront", json!({}))
             .await
@@ -1790,19 +1825,46 @@ impl CheckoutRunner {
                 store_number: plan.store_number.clone(),
                 store_title: plan.store_title.clone(),
                 owns_bag: false,
-                remove_id: String::new(),
             };
+            if self.login_blocked.load(Ordering::Acquire) {
+                let resumed = flow
+                    .read::<PageState>(PAGE_STATE_JS)
+                    .await
+                    .is_ok_and(|state| !state.sign_in && state.step.starts_with("Fulfillment"));
+                if !resumed {
+                    return Err(CheckoutError::new(
+                        Stage::SignIn,
+                        "正在等待当前页面完成 Apple 登录或验证；自动结账保持开启，不重复提交密码",
+                    ));
+                }
+                self.login_blocked.store(false, Ordering::Release);
+                progress("自动结账：已确认登录恢复，继续清理和重试".into());
+            }
+            if self.cleanup_pending.load(Ordering::Acquire) {
+                progress("自动加购：上次清理尚未完成，先确认空袋再处理本次到货".into());
+                flow.cleanup_bag().await?;
+                self.cleanup_pending.store(false, Ordering::Release);
+            }
             let result = flow.run().await;
-            if close_on_failure
-                && flow.owns_bag
-                && let Err(original) = &result
-                && original.can_retry()
-                && let Err(cleanup) = flow.cleanup_bag().await
-            {
-                return Err(CheckoutError::new(
-                    Stage::BagCleanup,
-                    format!("{original}；清理未完成：{}", cleanup.message),
-                ));
+            if close_on_failure && let Err(original) = &result {
+                if original.stage == Stage::SignIn {
+                    self.login_blocked.store(true, Ordering::Release);
+                }
+                if plan.auto_add_to_bag && original.stage != Stage::PlaceOrder {
+                    self.cleanup_pending.store(true, Ordering::Release);
+                }
+                if (plan.auto_add_to_bag || flow.owns_bag) && original.can_retry() {
+                    if let Err(cleanup) = flow.cleanup_bag().await {
+                        return Err(CheckoutError::new(
+                            Stage::BagCleanup,
+                            format!(
+                                "{original}；清理未完成：{}；自动结账保持开启，下次先继续清理",
+                                cleanup.message
+                            ),
+                        ));
+                    }
+                    self.cleanup_pending.store(false, Ordering::Release);
+                }
             }
             result
         }
@@ -1893,7 +1955,6 @@ mod tests {
             store_number: plan.store_number.clone(),
             store_title: plan.store_title.clone(),
             owns_bag: false,
-            remove_id: String::new(),
         }
         .review()
         .await;
@@ -1972,7 +2033,6 @@ mod tests {
             store_number: plan.store_number.clone(),
             store_title: plan.store_title.clone(),
             owns_bag: false,
-            remove_id: String::new(),
         }
         .wait_for_step(Stage::Bag, "Fulfillment")
         .await
@@ -1988,6 +2048,8 @@ mod tests {
         for stage in [
             Stage::Browser,
             Stage::Bag,
+            Stage::BagCleanup,
+            Stage::SignInLoading,
             Stage::Fulfillment,
             Stage::PickupContact,
             Stage::Billing,
@@ -2101,10 +2163,13 @@ mod tests {
                 sold_out, // 准备结账时库存已消失
                 navigate.clone(),
                 full,
+                cdp_page(json!(true)),    // 只读等待条目可删除
                 cdp_page(json!(removed)), // 清理前再次核对，移除只点一次
             ];
             if removed {
                 responses.extend([empty.clone(), navigate, empty, json!({"result": {}})]);
+            } else {
+                responses.push(json!({"result": {}})); // 清理失败也关闭本次窗口，下轮先继续清理
             }
             let responses = responses
                 .into_iter()
@@ -2135,15 +2200,16 @@ mod tests {
                     Stage::BagCleanup
                 }
             );
-            assert_eq!(error.can_retry(), removed);
-            assert_eq!(peer.await.unwrap(), removed);
+            assert!(error.can_retry());
+            assert!(peer.await.unwrap());
+            assert_eq!(runner.cleanup_pending.load(Ordering::Acquire), !removed);
             let requests = requests.lock().await;
             assert_eq!(
                 requests
                     .iter()
                     .filter(|r| r["method"] == "Browser.close")
                     .count(),
-                usize::from(removed)
+                1
             );
             assert!(requests.iter().any(|r| {
                 r["method"] == "Page.navigate"
@@ -2162,7 +2228,7 @@ mod tests {
             let remove = requests
                 .iter()
                 .filter_map(|r| r["params"]["expression"].as_str())
-                .find(|script| script.contains("rows.length !== 1"))
+                .find(|script| script.contains("matches.length !== 1"))
                 .unwrap();
             assert!(remove.contains("owned-item.delete"));
             assert!(remove.contains("MK2Q4CH/A"));
@@ -2187,6 +2253,338 @@ mod tests {
         drop(reservation);
         assert!(!runner.is_busy());
         assert!(runner.try_reserve().is_some());
+    }
+
+    fn bag_snapshot(items: Vec<serde_json::Value>) -> serde_json::Value {
+        cdp_page(
+            json!({"bagEmpty": items.is_empty(), "canCheckout": !items.is_empty(),
+            "items": items, "total": "", "canPlaceOrder": false, "bagReady": true, "errors": []}),
+        )
+    }
+
+    fn bag_target(plan: &CheckoutPlan) -> serde_json::Value {
+        json!({"name": plan.product_name, "quantity": "1", "partNumber": plan.part_number,
+            "removeId": "target.delete"})
+    }
+
+    fn bag_navigation() -> serde_json::Value {
+        json!({"result": {"frameId": "page"}})
+    }
+
+    fn with_navigation_checks(responses: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
+        responses
+            .into_iter()
+            .flat_map(|response| {
+                if response["result"]["frameId"].is_string() {
+                    vec![
+                        json!({"result": {"result": {"value": true}}}),
+                        response,
+                        cdp_page(json!(true)),
+                    ]
+                } else {
+                    vec![response]
+                }
+            })
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn 清理失败保留待清理状态下次先清空再按新型号加购() {
+        let mut plan = test_plan(true);
+        plan.auto_add_to_bag = true;
+        let old = json!({"name": "上次失败的旧型号", "quantity": "2", "partNumber": "OLDCH/A", "removeId": "old.delete"});
+        let runner = CheckoutRunner::new();
+        let (session, peer, first_requests) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                bag_navigation(),
+                bag_snapshot(vec![old.clone()]), // 本次检查发现残留而结束结账
+                bag_navigation(),
+                bag_snapshot(vec![old.clone()]),
+                cdp_page(json!(true)),
+                cdp_page(json!(false)),
+                json!({"result": {}}),
+            ]))
+            .await;
+        *runner.session.lock().await = Some(session);
+        let error = runner.run_on_hit(&plan, &|_| {}).await.unwrap_err();
+        assert_eq!(error.stage, Stage::BagCleanup);
+        assert!(error.can_retry());
+        assert!(runner.cleanup_pending.load(Ordering::Acquire));
+        assert!(peer.await.unwrap());
+        assert!(
+            !first_requests
+                .lock()
+                .await
+                .iter()
+                .any(|r| r["method"] == "Input.dispatchMouseEvent")
+        );
+
+        plan.part_number = "MK2U4CH/A".into();
+        plan.product_name = "iPhone Duo 1TB 夜空色".into();
+        plan.product_url = Some("https://www.apple.com.cn/shop/product/MK2U4CH/A".into());
+        let full = bag_snapshot(vec![bag_target(&plan)]);
+        let sold_out = cdp_page(json!({
+            "items": [bag_target(&plan)], "canCheckout": true, "bagReady": true,
+            "errors": ["商品已售罄"],
+        }));
+        let mut removing = old.clone();
+        removing["removeId"] = json!("");
+        let (session, peer, requests) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                bag_navigation(),
+                bag_snapshot(vec![old]), // 上次未清完，先处理
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![removing]),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]), // 新尝试从空袋开始
+                bag_navigation(),
+                cdp_page(json!({"ready": true, "error": ""})),
+                cdp_page(json!({"ready": true, "point": {"x": 10, "y": 20}, "error": ""})),
+                json!({"result": {}}),
+                json!({"result": {}}),
+                cdp_page(json!("complete")),
+                bag_navigation(),
+                full.clone(),
+                bag_navigation(),
+                sold_out,
+                bag_navigation(),
+                full,
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]),
+                json!({"result": {}}),
+            ]))
+            .await;
+        *runner.session.lock().await = Some(session);
+        let error = runner.run_on_hit(&plan, &|_| {}).await.unwrap_err();
+        assert_eq!(error.stage, Stage::Bag);
+        assert!(!runner.cleanup_pending.load(Ordering::Acquire));
+        assert!(peer.await.unwrap());
+        let requests = requests.lock().await;
+        let first_remove = requests
+            .iter()
+            .position(|r| {
+                r["params"]["expression"]
+                    .as_str()
+                    .is_some_and(|s| s.contains("old.delete") && s.ends_with("\"remove\"))"))
+            })
+            .unwrap();
+        let product = requests
+            .iter()
+            .position(|r| {
+                r["method"] == "Page.navigate"
+                    && r["params"]["url"] == plan.product_url.as_deref().unwrap()
+            })
+            .unwrap();
+        assert!(first_remove < product);
+        assert_eq!(
+            requests
+                .iter()
+                .filter(|r| r["method"] == "Input.dispatchMouseEvent")
+                .count(),
+            2
+        );
+        assert!(!requests.iter().any(|r| {
+            r["params"]["url"]
+                .as_str()
+                .is_some_and(|s| s.contains("MK2Q4CH"))
+        }));
+    }
+
+    #[tokio::test]
+    async fn 登录验证等待期间不重复输密码完成后自动恢复清理() {
+        let runner = CheckoutRunner::new();
+        runner.login_blocked.store(true, Ordering::Release);
+        runner.cleanup_pending.store(true, Ordering::Release);
+        let mut plan = test_plan(false);
+        plan.auto_add_to_bag = true;
+        plan.product_url = None; // 恢复验证后结束于准备阶段，不发起实际加购
+        let (session, peer, requests) = crate::chromium_fetcher::tests::checkout_session(vec![
+            json!({"result": {"result": {"value": 1}}}),
+            json!({"result": {}}),
+            cdp_page(json!({"step": "SignIn", "signIn": true})),
+        ])
+        .await;
+        *runner.session.lock().await = Some(session);
+        assert_eq!(
+            runner.run_on_hit(&plan, &|_| {}).await.unwrap_err().stage,
+            Stage::SignIn
+        );
+        assert!(!peer.await.unwrap(), "保留验证页");
+        assert_eq!(
+            requests.lock().await.len(),
+            3,
+            "不再提交密码或导航离开验证页"
+        );
+        assert!(runner.login_blocked.load(Ordering::Acquire));
+        runner.shutdown().await;
+
+        let (session, peer, requests) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                cdp_page(json!({"step": "Fulfillment", "signIn": false})),
+                bag_navigation(),
+                bag_snapshot(vec![]), // 恢复后先完成待清理
+                bag_navigation(),
+                bag_snapshot(vec![]), // 准备失败收尾仍确认空袋
+                json!({"result": {}}),
+            ]))
+            .await;
+        *runner.session.lock().await = Some(session);
+        assert_eq!(
+            runner.run_on_hit(&plan, &|_| {}).await.unwrap_err().stage,
+            Stage::Bag
+        );
+        assert!(peer.await.unwrap());
+        assert!(!runner.login_blocked.load(Ordering::Acquire));
+        assert!(!runner.cleanup_pending.load(Ordering::Acquire));
+        assert!(
+            !requests
+                .lock()
+                .await
+                .iter()
+                .any(|r| r["method"] == "Runtime.callFunctionOn")
+        );
+    }
+
+    #[tokio::test]
+    async fn 登录页面临时读取失败可以重试() {
+        let (mut session, peer, _) = crate::chromium_fetcher::tests::checkout_session(vec![
+            json!({"error": {"message": "context temporarily unavailable"}}),
+        ])
+        .await;
+        let plan = test_plan(false);
+        let error = Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &|_| {},
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: false,
+        }
+        .login_context()
+        .await
+        .unwrap_err();
+        assert_eq!(error.stage, Stage::SignInLoading);
+        assert!(error.can_retry());
+        drop(session);
+        assert!(peer.await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn 打开浏览器不会冲掉正在等待的登录验证页() {
+        let (session, peer, requests) = crate::chromium_fetcher::tests::checkout_session(vec![
+            json!({"result": {"result": {"value": 1}}}),
+            json!({"result": {}}),
+        ])
+        .await;
+        let runner = CheckoutRunner {
+            session: Arc::new(Mutex::new(Some(session))),
+            ..Default::default()
+        };
+        runner.login_blocked.store(true, Ordering::Release);
+        runner.open().await.unwrap();
+        assert!(!peer.await.unwrap());
+        let requests = requests.lock().await;
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1]["method"], "Page.bringToFront");
+        runner.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn 失败购物袋清理多个条目并刷新确认不会沿用残留() {
+        let mut plan = test_plan(false);
+        plan.auto_add_to_bag = true;
+        let target = bag_target(&plan);
+        let other = json!({"name": "其他残留商品", "quantity": "2", "partNumber": "OTHERCH/A", "removeId": "other.delete"});
+        let mut remaining = other.clone();
+        remaining["removeId"] = json!("target.delete"); // 重绘可能复用旧索引 ID，仍按新快照清理
+        let (mut session, peer, _) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                bag_navigation(),
+                bag_snapshot(vec![target, other.clone()]),
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![remaining]),
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]),
+            ]))
+            .await;
+        Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &|_| {},
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: true,
+        }
+        .cleanup_bag()
+        .await
+        .unwrap();
+        drop(session);
+        assert!(peer.await.unwrap());
+    }
+
+    /// 使用临时、未登录的购物袋，不点击结账，也不接触用户的购物袋和付款信息。
+    #[tokio::test]
+    #[ignore = "访问 Apple，独立 Pro 购物袋两轮加购与失败清空，不结账"]
+    async fn 真实失败购物袋清空后可重新加购() {
+        let profile = tempfile::tempdir().unwrap();
+        let mut session = ChromiumSession::start_visible(profile.path().to_path_buf())
+            .await
+            .unwrap();
+        let mut plan = test_plan(false);
+        plan.auto_add_to_bag = true;
+        plan.part_number = "MJTA4CH/A".into();
+        plan.product_name = "iPhone 18 Pro 256GB 冰川蓝色".into();
+        plan.product_url = Some("https://www.apple.com.cn/shop/product/MJTA4CH/A".into());
+        let progress = |message: String| eprintln!("{message}");
+        let mut results = Vec::new();
+        let mut failure = None;
+        let mut flow = Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &progress,
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: false,
+        };
+        for round in 1..=2 {
+            let start = Instant::now();
+            let result = flow.prepare_bag().await;
+            let add_ms = start.elapsed().as_millis();
+            let start = Instant::now();
+            let cleanup = flow.cleanup_bag().await;
+            results.push(json!({"round": round, "addMs": add_ms, "clearAndVerifyMs": start.elapsed().as_millis(),
+                "added": result.is_ok(), "emptyVerified": cleanup.is_ok()}));
+            if let Err(error) = result.and(cleanup) {
+                failure = Some(error);
+                break;
+            }
+        }
+        eprintln!(
+            "REAL_CONTINUOUS_BAG {}",
+            json!({"sku": plan.part_number, "isolatedProfile": true,
+            "checkoutAttempted": false, "results": results, "error": failure.as_ref().map(ToString::to_string)})
+        );
+        session.close().await;
+        if let Some(error) = failure {
+            panic!("真实空袋重试验证失败：{error}");
+        }
     }
 
     /// 使用临时、未登录的购物袋，不点击结账，也不接触用户的购物袋和付款信息。
@@ -2214,7 +2612,6 @@ mod tests {
                 store_number: plan.store_number.clone(),
                 store_title: plan.store_title.clone(),
                 owns_bag: false,
-                remove_id: String::new(),
             };
             let added = flow.prepare_bag().await;
             if added.is_err() {
@@ -2385,7 +2782,6 @@ mod tests {
             store_number: plan.store_number.clone(),
             store_title: plan.store_title.clone(),
             owns_bag: false,
-            remove_id: String::new(),
         }
         .run()
         .await;
@@ -2438,7 +2834,6 @@ mod tests {
             store_number: plan.store_number.clone(),
             store_title: plan.store_title.clone(),
             owns_bag: false,
-            remove_id: String::new(),
         };
         let state: PageState = flow
             .wait(

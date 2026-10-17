@@ -6,8 +6,8 @@ import vm from "node:vm";
 const addSource = readFileSync(new URL("../src-tauri/src/checkout_add_to_bag.js", import.meta.url), "utf8");
 const removeSource = readFileSync(new URL("../src-tauri/src/checkout_remove_from_bag.js", import.meta.url), "utf8");
 const linesSource = readFileSync(new URL("../src-tauri/src/checkout_line_items.js", import.meta.url), "utf8");
-const expected = { partNumber: "MK2Q4CH/A", productName: "iPhone Duo 512GB 夜空色", removeId: "owned-item.delete" };
-const location = { hostname: "www.apple.com.cn", pathname: "/shop/buy-iphone/iphone-duo/mk2q4ch/a", search: "" };
+const expected = { partNumber: "MK2Q4CH/A", productName: "iPhone Duo 512GB 夜空色", removeId: "owned-item.delete", quantity: "1" };
+const location = { protocol: "https:", hostname: "www.apple.com.cn", pathname: "/shop/buy-iphone/iphone-duo/mk2q4ch/a", search: "" };
 
 function run(source, document, page, ...args) {
   return JSON.parse(vm.runInNewContext(`JSON.stringify((${source})(...args))`, { document, location: page, URLSearchParams, args }));
@@ -82,7 +82,7 @@ test("失败清理只移除原来的一个 SKU，其他商品、数量或条目 
   for (const options of [{}, { count: 2 }, { part: "MK2U4CH/A" }, { quantity: "2" }, { id: "user-added-item.delete" }, { name: "另一件商品" }]) {
     const bag = bagFixture(options);
     const allowed = Object.keys(options).length === 0;
-    assert.equal(run(removeSource, bag.document, { ...location, pathname: "/shop/bag" }, expected), allowed);
+    assert.equal(run(removeSource, bag.document, { ...location, pathname: "/shop/bag" }, expected, "remove"), allowed);
     assert.equal(bag.removals(), Number(allowed));
   }
 });
@@ -99,3 +99,67 @@ test("页面加载中没有商品行不能误判空袋，必须读到 Apple 的�
   assert.equal(full.items[0].partNumber, expected.partNumber);
   assert.equal(full.items[0].removeId, expected.removeId);
 });
+
+function multiBag(items) {
+  const rows = [];
+  const removed = [];
+  for (const item of items) {
+    const title = { innerText: item.name, getAttribute: () => item.part ? `/shop/product/${item.part}` : '' };
+    const remove = { id: item.id, disabled: !!item.disabled, click() { removed.push(item.id); rows.splice(rows.indexOf(row), 1); } };
+    const row = {
+      innerText: `${item.name}${item.quantity ? ' 数量 ' + item.quantity : ''}`,
+      getAttribute: () => `bag-item-${rows.indexOf(row) + 1}`,
+      querySelector(selector) {
+        if (selector === '[data-autom="bag-item-name"], h2, h3' || selector === 'a[data-autom="bag-item-name"]') return title;
+        if (selector === 'select[data-autom="item-quantity-dropdown"]') return item.quantity ? { value: item.quantity } : null;
+        if (selector === 'button[data-autom="bag-item-remove-button"]') return remove;
+        return null;
+      },
+    };
+    rows.push(row);
+  }
+  return { removed, document: {
+    querySelectorAll: () => rows,
+    querySelector(selector) {
+      if (selector === '[data-autom="bag-header"]') return rows.length ? {} : null;
+      if (selector === '[data-autom="bag-empty-continueshopping-button"]') return rows.length ? null : {};
+      return null;
+    },
+  } };
+}
+const bagPage = { ...location, pathname: '/shop/bag' };
+
+test("失败购物袋按当前条目逐个删除其他型号和数量不符的商品，准备轮询不点击", () => {
+  const entries = [
+    { name: '其他型号', part: 'OLDCH/A', quantity: '2', id: 'old.delete' },
+    { name: expected.productName, part: expected.partNumber, quantity: '1', id: 'target.delete' },
+    { name: '附加服务', part: '', quantity: '', id: 'service.delete' },
+  ];
+  const bag = multiBag(entries);
+  for (const entry of entries) {
+    const snapshot = { partNumber: entry.part, productName: entry.name, quantity: entry.quantity, removeId: entry.id };
+    assert.equal(run(removeSource, bag.document, bagPage, snapshot, 'ready'), true);
+    assert.equal(bag.removed.length, entries.indexOf(entry));
+    assert.equal(run(removeSource, bag.document, bagPage, snapshot, 'remove'), true);
+  }
+  assert.deepEqual(bag.removed, entries.map(e => e.id));
+  assert.equal(run(linesSource, bag.document, bagPage, []).bagEmpty, true);
+});
+
+test("失败清理仍核对快照，条目变化、按钮禁用或非官方购物袋均不删除", () => {
+  const entry = { name: expected.productName, part: expected.partNumber, quantity: '1', id: expected.removeId };
+  for (const [item, page] of [
+    [{ ...entry, quantity: '2' }, bagPage],
+    [{ ...entry, disabled: true }, bagPage],
+    [entry, { ...bagPage, protocol: 'http:' }],
+    [entry, { ...bagPage, hostname: 'example.test' }],
+    [entry, { ...bagPage, pathname: '/shop/checkout' }],
+  ]) {
+    const bag = multiBag([item]);
+    assert.equal(run(removeSource, bag.document, page, expected, 'remove'), false);
+    assert.deepEqual(bag.removed, []);
+  }
+});
+const targetItem = { part: expected.partNumber, name: expected.productName, quantity: '1', id: expected.removeId };
+const otherItem = { part: 'MJTA4CH/A', name: 'iPhone 18 Pro 256GB 冰川蓝色', quantity: '1', id: 'old-pro.delete' };
+const snapshot = item => ({ partNumber: item.part, productName: item.name, quantity: item.quantity, removeId: item.id });

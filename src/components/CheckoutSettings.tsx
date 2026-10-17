@@ -159,9 +159,9 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
           {checkout.autoAddToBag ? <>
-            <strong className="text-foreground">开启自动下单前，请先点击「打开下单浏览器」，手动清空购物袋。残留其他商品或数量不符会阻碍自动下单。</strong>
+            <strong className="text-foreground">开启前建议点击「打开下单浏览器」，手动清空专属购物袋，减少失败清理的等待。</strong>
             <br />
-            按本次到货型号加购 1 件；结账失败会移除本次商品、确认空袋后关闭页面并继续监控。
+            按本次到货型号加购 1 件；提交前失败会清空专属购物袋，确认空袋后关闭页面并继续监控。清理未成功时，下次先继续清理再加购，自动结账保持开启。
           </> : "购物袋里必须只有到货的那一件商品。"}
         </p>
         <div className="setting-row">
@@ -176,7 +176,7 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
           {checkout.disableAfterSuccess
             ? "到达查看订单页或确认订单已提交后，关闭上方总开关。"
             : "成功后保持总开关开启；监控继续运行时，持续有货会再次结账并切换当前页面，开启立即下单时可能生成多笔真实订单。"}
-          提交结果不明、购物袋无法安全清理或登录需人工处理时，仍会关闭自动结账并保留页面。
+          提交结果不明时仍会关闭自动结账并保留页面，避免重复下单。登录需验证时保留页面和开关，完成登录并停在取货方式页后，后续到货自动继续。
         </p>
         <div className="setting-row">
           <Label htmlFor="checkout-auto-add" className="text-sm font-normal">按到货型号自动加入购物袋</Label>
@@ -184,7 +184,7 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
           {checkout.autoAddToBag
-            ? "监控列表中的中国大陆型号都可触发，同一时间只处理一件。专属购物袋请先留空；已有本次型号的 1 件商品时沿用，出现其他商品时停下，不会清除它们或一起购买。暂不支持需另选表带等组合配置。"
+            ? "监控列表中的中国大陆型号都可触发，同一时间只处理一件。已有本次型号 1 件时沿用；其他商品或数量不符会结束本轮并清空专属购物袋，下次有货重新加购。请勿在此购物袋保存其他商品，暂不支持需另选表带等组合配置。"
             : "关闭时使用事先准备的购物袋，只对下面选定的商品结账。"}
         </p>
         {!checkout.autoAddToBag ? <div className="field-group">

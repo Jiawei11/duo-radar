@@ -1250,35 +1250,30 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
         Err(error) => {
             // 在「立即下单」这一步出错时，无法确定订单有没有生成。持续有货时下一轮
             // 还会触发结账，所以先把开关关掉，绝不能在这种状态下再点一次。
-            if matches!(
-                error.stage,
-                checkout::Stage::PlaceOrder | checkout::Stage::BagCleanup | checkout::Stage::SignIn
-            ) {
+            if should_disable_checkout_after_failure(&error) {
                 let mut next = state.settings_snapshot();
                 next.checkout.enabled = false;
                 if state.put_settings(next.clone()).is_ok() {
                     let _ = app.emit(SETTINGS_CHANNEL, &next);
                 }
-                if error.stage == checkout::Stage::SignIn {
-                    (
-                        "Apple 登录需要处理",
-                        format!("{error}。已保留页面并关闭自动结账，完成登录后再开启。"),
-                    )
-                } else if error.stage == checkout::Stage::BagCleanup {
-                    (
-                        "购物袋需要人工检查",
-                        format!(
-                            "{error}。已保留页面并关闭自动结账，整理购物袋后再开启；库存监控可以继续。"
-                        ),
-                    )
-                } else {
-                    (
-                        "提交订单时出错，请确认结果",
-                        format!(
-                            "{error}。订单可能已经生成，请在下单浏览器里确认。自动结账已关闭。"
-                        ),
-                    )
-                }
+                (
+                    "提交订单时出错，请确认结果",
+                    format!("{error}。订单可能已经生成，请在下单浏览器里确认。自动结账已关闭。"),
+                )
+            } else if error.stage == checkout::Stage::SignIn {
+                (
+                    "Apple 登录等待验证",
+                    format!(
+                        "{error}。已保留页面，自动结账保持开启。请在当前页面完成登录；后续到货确认登录恢复后自动继续，无需重新开启开关。"
+                    ),
+                )
+            } else if error.stage == checkout::Stage::BagCleanup {
+                (
+                    "购物袋清理将继续重试",
+                    format!(
+                        "{error}。自动结账保持开启；下次有货先继续清理，确认空袋后才加购，不叠加失败商品。"
+                    ),
+                )
             } else {
                 let cleanup = if error.stage == checkout::Stage::Browser {
                     ""
@@ -1300,6 +1295,10 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
     if let Err(err) = dispatch_notification(&app, Notification::new(title, body), &bark_url).await {
         let _ = app.emit(NOTICE_CHANNEL, format!("发送结账提醒时出错：{err}"));
     }
+}
+
+fn should_disable_checkout_after_failure(error: &checkout::CheckoutError) -> bool {
+    error.stage == checkout::Stage::PlaceOrder
 }
 
 fn should_disable_checkout_after_success(settings: &Settings, outcome: &CheckoutOutcome) -> bool {
@@ -1758,7 +1757,8 @@ async fn release_browsers(app: &AppHandle) {
 mod tests {
     use super::{
         in_stock_notification_body, parse_delivery_localities, parse_watch_band_choices,
-        parse_watch_band_sizes, should_disable_checkout_after_success, should_pause_monitoring,
+        parse_watch_band_sizes, should_disable_checkout_after_failure,
+        should_disable_checkout_after_success, should_pause_monitoring,
     };
     use crate::checkout::{CheckoutError, CheckoutOutcome, Stage};
     use apw_core::config::Settings;
@@ -1796,6 +1796,31 @@ mod tests {
     }
 
     #[test]
+    fn 只有提交结果不明才因失败关闭自动结账() {
+        for stage in [
+            Stage::Browser,
+            Stage::Bag,
+            Stage::BagCleanup,
+            Stage::SignIn,
+            Stage::SignInLoading,
+            Stage::Fulfillment,
+            Stage::PickupContact,
+            Stage::Billing,
+            Stage::Review,
+            Stage::PlaceOrder,
+        ] {
+            let error = CheckoutError {
+                stage,
+                message: "test".into(),
+            };
+            assert_eq!(
+                should_disable_checkout_after_failure(&error),
+                stage == Stage::PlaceOrder
+            );
+        }
+    }
+
+    #[test]
     fn 到货后暂停监控不会截断自动结账失败重试() {
         let mut settings = Settings {
             stop_on_hit: true,
@@ -1814,7 +1839,9 @@ mod tests {
         for stage in [
             Stage::Browser,
             Stage::Bag,
+            Stage::BagCleanup,
             Stage::SignIn,
+            Stage::SignInLoading,
             Stage::Fulfillment,
             Stage::PickupContact,
             Stage::Billing,
