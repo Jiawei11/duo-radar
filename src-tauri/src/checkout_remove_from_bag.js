@@ -1,24 +1,17 @@
-(expected, action = 'remove') => {
-  const normalize = s => (s || '').replace(/\s+/g, '').toLowerCase();
-  if (location.protocol !== 'https:' || location.hostname !== 'www.apple.com.cn' || location.pathname !== '/shop/bag') return false;
-  if (!expected.removeId || !['ready', 'remove'].includes(action)) return false;
-  const rows = [...document.querySelectorAll('[data-autom^="bag-item-"]')].filter(e => /^bag-item-\d+$/.test(e.getAttribute('data-autom')));
-  // 每次只移除刚读取的一个条目；多商品时也必须核对条目 ID、型号、名称和数量。
-  const matches = rows.filter(row => row.querySelector('button[data-autom="bag-item-remove-button"]')?.id === expected.removeId);
-  if (matches.length !== 1) return false;
-  const row = matches[0];
-  const title = row.querySelector('[data-autom="bag-item-name"], h2, h3');
-  const link = row.querySelector('a[data-autom="bag-item-name"]');
-  const part = link && (link.getAttribute('href') || '').match(/\/shop\/product\/([^/?#]+\/[^/?#]+)/i);
-  const actualPart = part ? decodeURIComponent(part[1]).toUpperCase() : '';
-  const select = row.querySelector('select[data-autom="item-quantity-dropdown"]');
-  const counted = (row.innerText || '').replace(/\s+/g, ' ').match(/数量\s*(\d+)/);
-  const quantity = select ? select.value : counted ? counted[1] : '';
+(expected) => {
+  const normalize = (s) => (s || '').replace(/\s+/g, '').toLowerCase();
+  if (location.hostname !== 'www.apple.com.cn' || location.pathname !== '/shop/bag') return false;
+  const rows = [...document.querySelectorAll('[data-autom^="bag-item-"]')].filter((e) => /^bag-item-\d+$/.test(e.getAttribute('data-autom')));
+  // 不清除其他商品。袋中出现额外内容时交给用户处理，不能一起结账或一键清空。
+  if (rows.length !== 1) return false;
+  const row = rows[0];
+  const title = row.querySelector('a[data-autom="bag-item-name"]');
+  const part = title && (title.getAttribute('href') || '').match(/\/shop\/product\/([^/?#]+\/[^/?#]+)/i);
+  const quantity = row.querySelector('select[data-autom="item-quantity-dropdown"]');
   const remove = row.querySelector('button[data-autom="bag-item-remove-button"]');
-  if (!title || actualPart !== expected.partNumber.toUpperCase() ||
-      normalize(title.innerText) !== normalize(expected.productName) || quantity !== (expected.quantity ?? '1') ||
-      !remove || remove.disabled) return false;
-  if (action === 'ready') return true;
+  if (!title || !part || decodeURIComponent(part[1]).toUpperCase() !== expected.partNumber.toUpperCase() ||
+      normalize(title.innerText) !== normalize(expected.productName) || !quantity || quantity.value !== '1' ||
+      !remove || remove.disabled || (expected.removeId && remove.id !== expected.removeId)) return false;
   remove.click();
   return true;
 }
