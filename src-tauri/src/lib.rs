@@ -8,8 +8,9 @@
 //! 提醒也刻意放在这一层而不是前端：托盘模式下窗口是隐藏的，WebView 可能被
 //! 系统节流甚至挂起，把「及时提醒」挂在一个会被挂起的执行环境上是不能接受的。
 
-use std::sync::RwLock;
-use std::time::Duration;
+use std::io::Write;
+use std::sync::{Mutex as StdMutex, OnceLock, RwLock};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use apw_core::catalog::Catalog;
 use apw_core::config::{ClashSettings, MIN_INTERVAL_SECONDS, OpenOnHit, Settings, SettingsStore};
@@ -24,6 +25,7 @@ use tauri_plugin_updater::UpdaterExt;
 
 mod browser_support;
 mod checkout;
+mod checkout_login;
 mod chromium_fetcher;
 mod clash;
 mod route_pool;
@@ -41,6 +43,50 @@ const SETTINGS_CHANNEL: &str = "watcher://settings";
 /// 退出时等待浏览器收尾的上限。正在进行的查询或结账可能占着会话不放，
 /// 不能让退出一直卡住；超时后残留的进程由下次启动回收。
 const EXIT_CLEANUP_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// 本地验收时可选的结构化流程日志。只写显式选择的库存和流程字段，
+/// 不序列化 Settings、联系人、Cookie、通知地址或订单号。
+fn checkout_audit(event: &str, details: serde_json::Value) {
+    static LOG: OnceLock<Option<StdMutex<std::fs::File>>> = OnceLock::new();
+    let Some(log) = LOG.get_or_init(|| {
+        let path = std::env::var_os("APW_CHECKOUT_AUDIT_PATH")?;
+        let mut options = std::fs::OpenOptions::new();
+        options.create(true).append(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        match options.open(path) {
+            Ok(file) => Some(StdMutex::new(file)),
+            Err(error) => {
+                eprintln!("无法留存结账流程日志：{error}");
+                None
+            }
+        }
+    }) else {
+        return;
+    };
+    let row = serde_json::json!({
+        "tsMs": SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis(),
+        "event": event,
+        "details": details,
+    });
+    if let Ok(mut bytes) = serde_json::to_vec(&row) {
+        bytes.push(b'\n');
+        if let Ok(mut file) = log.lock()
+            && let Err(error) = file.write_all(&bytes)
+        {
+            eprintln!("留存结账流程日志失败：{error}");
+        }
+    }
+}
+
+fn checkout_audit_target(target: &Target) -> serde_json::Value {
+    serde_json::json!({"locale": target.locale, "partNumber": target.part_number,
+        "productName": target.product_name, "storeNumber": target.store_number,
+        "storeTitle": target.store_title})
+}
 
 /// 地区的可序列化形式。
 ///
@@ -1092,14 +1138,16 @@ async fn test_checkout(
 
 /// 到货后执行自动结账，并把结果通知用户。
 ///
-/// 无论停在「查看订单」页还是已提交订单，成功一次后都会关闭自动结账：再次到货
-/// 时重跑流程会打断用户正在看的页面，已下单时还会重复下单。
+/// 成功后是否关闭总开关由用户选择；提交结果不明时仍强制停止自动结账。
 async fn run_checkout_on_hit(app: AppHandle, target: Target) {
     let Some(state) = app.try_state::<AppState>() else {
         return;
     };
     let settings = state.settings_snapshot();
     let bark_url = settings.bark_url_for(&target).to_owned();
+    if !settings.checkout.enabled || !settings.is_checkout_target(&target) {
+        return;
+    }
     if !settings.checkout.has_national_id_suffix() {
         let _ = app.emit(
             NOTICE_CHANNEL,
@@ -1113,23 +1161,59 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
         &state.catalog,
         settings.checkout.place_order,
     );
+    let attempt = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis();
+    let audit_target = checkout_audit_target(&target);
+    checkout_audit(
+        "attemptStarted",
+        serde_json::json!({"attempt": attempt, "target": audit_target}),
+    );
     let progress = {
         let app = app.clone();
+        let audit_target = audit_target.clone();
         move |message: String| {
+            checkout_audit(
+                "checkoutProgress",
+                serde_json::json!({"attempt": attempt, "target": audit_target, "message": message}),
+            );
             let _ = app.emit(NOTICE_CHANNEL, message);
         }
     };
-    let (title, body) = match state.checkout.run(&plan, &progress).await {
+    let result = state.checkout.run_on_hit(&plan, &progress).await;
+    let audit_result = match &result {
+        Ok(CheckoutOutcome::ReachedReview { .. }) => serde_json::json!({"status": "reachedReview"}),
+        Ok(CheckoutOutcome::OrderSubmitted { order_number, .. }) => {
+            serde_json::json!({"status": "orderSubmitted", "hasOrderNumber": order_number.is_some()})
+        }
+        Err(error) => {
+            serde_json::json!({"status": "failed", "stage": format!("{:?}", error.stage)})
+        }
+    };
+    checkout_audit(
+        "attemptFinished",
+        serde_json::json!({"attempt": attempt, "target": audit_target, "result": audit_result}),
+    );
+    let pause_after_checkout = should_pause_monitoring(&state.settings_snapshot(), Some(&result));
+    let (title, body) = match result {
         Ok(outcome) => {
             let mut next = state.settings_snapshot();
-            next.checkout.enabled = false;
-            match state.put_settings(next.clone()) {
-                Ok(()) => {
-                    let _ = app.emit(SETTINGS_CHANNEL, &next);
+            if should_disable_checkout_after_success(&next, &outcome) {
+                next.checkout.enabled = false;
+                match state.put_settings(next.clone()) {
+                    Ok(()) => {
+                        let _ = app.emit(SETTINGS_CHANNEL, &next);
+                    }
+                    Err(err) => {
+                        let _ = app.emit(NOTICE_CHANNEL, format!("关闭自动结账开关失败：{err}"));
+                    }
                 }
-                Err(err) => {
-                    let _ = app.emit(NOTICE_CHANNEL, format!("关闭自动结账开关失败：{err}"));
-                }
+            } else if next.checkout.enabled {
+                let _ = app.emit(
+                    NOTICE_CHANNEL,
+                    "自动结账：按设置保持开启，监控继续运行时后续有货会再次结账。",
+                );
             }
             match outcome {
                 CheckoutOutcome::ReachedReview { store, total } => (
@@ -1157,7 +1241,7 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
                 } => (
                     "已点立即下单，请确认结果",
                     format!(
-                        "{store} {}，总计 {total}。页面上没有读到订单号，请在下单浏览器里确认订单是否成立。",
+                        "{store} {}，总计 {total}。页面上没有读到订单号，已关闭自动结账，请在下单浏览器里确认订单是否成立。",
                         target.product_name
                     ),
                 ),
@@ -1166,7 +1250,7 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
         Err(error) => {
             // 在「立即下单」这一步出错时，无法确定订单有没有生成。持续有货时下一轮
             // 还会触发结账，所以先把开关关掉，绝不能在这种状态下再点一次。
-            if error.stage == checkout::Stage::PlaceOrder {
+            if should_disable_checkout_after_failure(&error) {
                 let mut next = state.settings_snapshot();
                 next.checkout.enabled = false;
                 if state.put_settings(next.clone()).is_ok() {
@@ -1176,18 +1260,69 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
                     "提交订单时出错，请确认结果",
                     format!("{error}。订单可能已经生成，请在下单浏览器里确认。自动结账已关闭。"),
                 )
+            } else if error.stage == checkout::Stage::SignIn {
+                (
+                    "Apple 登录等待验证",
+                    format!(
+                        "{error}。已保留页面，自动结账保持开启。请在当前页面完成登录；后续到货确认登录恢复后自动继续，无需重新开启开关。"
+                    ),
+                )
+            } else if error.stage == checkout::Stage::BagCleanup {
+                (
+                    "购物袋清理将继续重试",
+                    format!(
+                        "{error}。自动结账保持开启；下次有货先继续清理，确认空袋后才加购，不叠加失败商品。"
+                    ),
+                )
             } else {
+                let cleanup = if error.stage == checkout::Stage::Browser {
+                    ""
+                } else {
+                    "已关闭本次下单页面；"
+                };
                 (
                     "自动结账没有完成",
-                    format!("{error}。请在下单浏览器里手动继续。"),
+                    format!("{error}。{cleanup}监控继续运行时，下次确认有货会重新打开购物袋尝试。"),
                 )
             }
         }
     };
+    if pause_after_checkout && state.watcher.is_running().await {
+        state.watcher.stop().await;
+        let _ = app.emit(NOTICE_CHANNEL, "本次自动结账已结束，已按设置暂停监控。");
+    }
     let _ = app.emit(NOTICE_CHANNEL, format!("{title}：{body}"));
     if let Err(err) = dispatch_notification(&app, Notification::new(title, body), &bark_url).await {
         let _ = app.emit(NOTICE_CHANNEL, format!("发送结账提醒时出错：{err}"));
     }
+}
+
+fn should_disable_checkout_after_failure(error: &checkout::CheckoutError) -> bool {
+    error.stage == checkout::Stage::PlaceOrder
+}
+
+fn should_disable_checkout_after_success(settings: &Settings, outcome: &CheckoutOutcome) -> bool {
+    settings.checkout.disable_after_success
+        || matches!(
+            outcome,
+            CheckoutOutcome::OrderSubmitted {
+                order_number: None,
+                ..
+            }
+        )
+}
+
+/// 自动结账开启时，要等流程完成或需要人工确认才暂停，失败不能截断后续重试。
+fn should_pause_monitoring(
+    settings: &Settings,
+    checkout_result: Option<&Result<CheckoutOutcome, checkout::CheckoutError>>,
+) -> bool {
+    settings.stop_on_hit
+        && match checkout_result {
+            None => !settings.checkout.enabled,
+            Some(Ok(_)) => true,
+            Some(Err(error)) => error.stage == checkout::Stage::PlaceOrder,
+        }
 }
 
 /// 消费引擎事件：转发给前端，并在有货时发提醒。
@@ -1197,24 +1332,60 @@ async fn pump_events(app: AppHandle, mut events: tokio::sync::mpsc::Receiver<Eve
         // 中间少一层可能出错的翻译。
         let _ = app.emit(EVENT_CHANNEL, &event);
 
+        match &event {
+            Event::InStock { state } => {
+                checkout_audit("inStock", checkout_audit_target(&state.target))
+            }
+            Event::CycleStarted {
+                cycle,
+                store_count,
+                target_count,
+            } => checkout_audit(
+                "cycleStarted",
+                serde_json::json!({"cycle": cycle, "storeCount": store_count, "targetCount": target_count}),
+            ),
+            Event::CycleComplete {
+                cycle,
+                elapsed_ms,
+                healthy,
+                snapshot,
+                ..
+            } => checkout_audit(
+                "cycleComplete",
+                serde_json::json!({"cycle": cycle, "elapsedMs": elapsed_ms, "healthy": healthy, "targetCount": snapshot.len(), "inStockCount": snapshot.iter().filter(|s| s.availability.is_in_stock()).count()}),
+            ),
+            Event::RunStateChanged { running } => {
+                checkout_audit("runStateChanged", serde_json::json!({"running": running}))
+            }
+            Event::Trouble { .. } => {
+                checkout_audit("trouble", serde_json::json!({"needsInspection": true}))
+            }
+            Event::StateChanged { .. } => {}
+        }
+
         if let Event::InStock { state } = &event {
             let target = &state.target;
             let settings = app
                 .try_state::<AppState>()
                 .map(|s| s.settings_snapshot())
                 .unwrap_or_default();
-            // 只有设置里选定的那件商品到货才结账。其他商品照常提醒，但不去碰下单
-            // 浏览器，免得占住结账、让选定的那件到货时反而被挡在外面。
+            // 自动加购模式按本次到货型号结账；旧模式仍只匹配选定商品。
             // 持续有货时每一轮都会再收到到货事件；上一次结账还在进行就不再触发，
             // 否则每一轮都会多一条「已有结账在进行」的失败提醒。
-            let checkout_busy = app
-                .try_state::<AppState>()
-                .is_some_and(|s| s.checkout.is_busy());
-            if settings.checkout.enabled && settings.is_checkout_target(target) && !checkout_busy {
-                // 结账要操作好几个页面，不能占住事件循环，否则后续提醒都会被拖住。
-                tauri::async_runtime::spawn(run_checkout_on_hit(app.clone(), target.clone()));
+            if settings.checkout.enabled
+                && settings.is_checkout_target(target)
+                && let Some(reservation) = app
+                    .try_state::<AppState>()
+                    .and_then(|s| s.checkout.try_reserve())
+            {
+                let app = app.clone();
+                let target = target.clone();
+                tauri::async_runtime::spawn(async move {
+                    let _reservation = reservation;
+                    run_checkout_on_hit(app, target).await;
+                });
             }
-            if settings.stop_on_hit {
+            if should_pause_monitoring(&settings, None) {
                 // 放到独立任务里停：引擎可能正等着往这个事件通道里发下一条事件，
                 // 在这里原地等它停下会互相卡住。本轮已经发出的到货事件仍会照常处理。
                 let app = app.clone();
@@ -1481,6 +1652,10 @@ pub fn run() {
                     fetcher.set_network(network).await;
                     watcher.set_targets(targets).await;
                     watcher.set_interval(interval).await;
+                    // 仅本地验收启动命令显式指定时恢复原有监控，普通启动仍保持暂停。
+                    if std::env::var_os("APW_MONITOR_AUTOSTART").is_some_and(|v| v == "1") {
+                        watcher.start().await;
+                    }
                 });
             }
 
@@ -1546,6 +1721,9 @@ pub fn run() {
             test_notify,
             open_checkout_browser,
             test_checkout,
+            checkout_login::checkout_login_status,
+            checkout_login::save_checkout_login,
+            checkout_login::clear_checkout_login,
             open_target_product,
             check_for_update,
             install_update,
@@ -1579,9 +1757,141 @@ async fn release_browsers(app: &AppHandle) {
 mod tests {
     use super::{
         in_stock_notification_body, parse_delivery_localities, parse_watch_band_choices,
-        parse_watch_band_sizes,
+        parse_watch_band_sizes, should_disable_checkout_after_failure,
+        should_disable_checkout_after_success, should_pause_monitoring,
     };
+    use crate::checkout::{CheckoutError, CheckoutOutcome, Stage};
+    use apw_core::config::Settings;
     use apw_core::model::Target;
+
+    #[test]
+    fn 成功后是否关闭由用户选择但提交结果不明必须关闭() {
+        let mut settings = Settings::default();
+        let review = CheckoutOutcome::ReachedReview {
+            store: "test".into(),
+            total: "100".into(),
+        };
+        let submitted = CheckoutOutcome::OrderSubmitted {
+            store: "test".into(),
+            total: "100".into(),
+            order_number: Some("W12345678".into()),
+        };
+        let uncertain = CheckoutOutcome::OrderSubmitted {
+            store: "test".into(),
+            total: "100".into(),
+            order_number: None,
+        };
+        for disable in [true, false] {
+            settings.checkout.disable_after_success = disable;
+            assert_eq!(
+                should_disable_checkout_after_success(&settings, &review),
+                disable
+            );
+            assert_eq!(
+                should_disable_checkout_after_success(&settings, &submitted),
+                disable
+            );
+            assert!(should_disable_checkout_after_success(&settings, &uncertain));
+        }
+    }
+
+    #[test]
+    fn 只有提交结果不明才因失败关闭自动结账() {
+        for stage in [
+            Stage::Browser,
+            Stage::Bag,
+            Stage::BagCleanup,
+            Stage::SignIn,
+            Stage::SignInLoading,
+            Stage::Fulfillment,
+            Stage::PickupContact,
+            Stage::Billing,
+            Stage::Review,
+            Stage::PlaceOrder,
+        ] {
+            let error = CheckoutError {
+                stage,
+                message: "test".into(),
+            };
+            assert_eq!(
+                should_disable_checkout_after_failure(&error),
+                stage == Stage::PlaceOrder
+            );
+        }
+    }
+
+    #[test]
+    fn 到货后暂停监控不会截断自动结账失败重试() {
+        let mut settings = Settings {
+            stop_on_hit: true,
+            ..Settings::default()
+        };
+        assert!(
+            should_pause_monitoring(&settings, None),
+            "普通监控到货即暂停"
+        );
+
+        settings.checkout.enabled = true;
+        assert!(
+            !should_pause_monitoring(&settings, None),
+            "自动结账到货后先保持监控"
+        );
+        for stage in [
+            Stage::Browser,
+            Stage::Bag,
+            Stage::BagCleanup,
+            Stage::SignIn,
+            Stage::SignInLoading,
+            Stage::Fulfillment,
+            Stage::PickupContact,
+            Stage::Billing,
+            Stage::Review,
+        ] {
+            let failure = Err(CheckoutError {
+                stage,
+                message: "失败".into(),
+            });
+            assert!(
+                !should_pause_monitoring(&settings, Some(&failure)),
+                "{stage:?} 失败应继续监控"
+            );
+        }
+
+        let completed = [
+            Ok(CheckoutOutcome::ReachedReview {
+                store: "test".into(),
+                total: "100".into(),
+            }),
+            Ok(CheckoutOutcome::OrderSubmitted {
+                store: "test".into(),
+                order_number: Some("W12345678".into()),
+                total: "100".into(),
+            }),
+            Ok(CheckoutOutcome::OrderSubmitted {
+                store: "test".into(),
+                order_number: None,
+                total: "100".into(),
+            }),
+            Err(CheckoutError {
+                stage: Stage::PlaceOrder,
+                message: "结果不明".into(),
+            }),
+        ];
+        for result in &completed {
+            assert!(
+                should_pause_monitoring(&settings, Some(result)),
+                "完成或需确认后才暂停"
+            );
+        }
+        settings.stop_on_hit = false;
+        assert!(!should_pause_monitoring(&settings, None));
+        for result in &completed {
+            assert!(
+                !should_pause_monitoring(&settings, Some(result)),
+                "未开启暂停时继续监控"
+            );
+        }
+    }
 
     #[test]
     fn apple地区响应过滤占位项并保留三级选项() {

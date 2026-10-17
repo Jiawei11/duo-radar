@@ -113,6 +113,8 @@ fn 样例设置() -> Settings {
         },
         checkout: CheckoutSettings {
             enabled: true,
+            disable_after_success: false,
+            auto_add_to_bag: false,
             national_id_suffix: "123X".into(),
             payment: CheckoutPayment::Installment,
             installment_bank: "招商银行".into(),
@@ -737,6 +739,7 @@ fn 自动结账默认关闭且不会自动提交订单() {
     huabei.normalize();
     assert_eq!(huabei.checkout.installment_periods, 12);
     assert!(!checkout.enabled);
+    assert!(checkout.disable_after_success);
     assert!(!checkout.place_order);
     assert!(!checkout.accept_nearest_store);
     assert!(!checkout.fill_contact);
@@ -770,6 +773,18 @@ fn 旧配置缺少自动结账字段时保持关闭() {
 }
 
 #[test]
+fn 成功后关闭选项兼容旧配置且保留用户持续结账选择() {
+    let old: CheckoutSettings = serde_json::from_str(r#"{"enabled":true}"#).unwrap();
+    assert!(old.disable_after_success);
+    let mut settings = Settings::default();
+    settings.checkout.disable_after_success = false;
+    settings.normalize();
+    let loaded: Settings =
+        serde_json::from_value(serde_json::to_value(&settings).unwrap()).unwrap();
+    assert!(!loaded.checkout.disable_after_success);
+}
+
+#[test]
 fn 只监控一件商品时自动认定它为下单商品() {
     let mut settings = Settings {
         targets: vec![目标("R683", "MG724CH/A"), 目标("R448", "MG724CH/A")],
@@ -795,6 +810,35 @@ fn 监控多件商品时只有选中的那件会触发结账() {
     assert!(settings.checkout.enabled);
     assert!(!settings.is_checkout_target(&settings.targets[0]));
     assert!(settings.is_checkout_target(&settings.targets[1]));
+}
+
+#[test]
+fn 自动加购允许不同型号到货且仍排除其他地区() {
+    let mut overseas = 目标("R409", "MG724ZP/A");
+    overseas.locale = "zh_HK".into();
+    let mut settings = Settings {
+        targets: vec![
+            目标("R683", "MG724CH/A"),
+            目标("R448", "MG0A4CH/A"),
+            overseas,
+        ],
+        ..Default::default()
+    };
+    settings.checkout.auto_add_to_bag = true;
+    settings.checkout.enabled = true;
+    // 即使保留了旧模式的单商品选择，也不能挡住新模式中的另一件商品。
+    settings.checkout.product = "MG724CH/A||".into();
+    settings.normalize();
+    assert!(settings.checkout.enabled);
+    assert!(settings.is_checkout_target(&settings.targets[0]));
+    assert!(settings.is_checkout_target(&settings.targets[1]));
+    assert!(!settings.is_checkout_target(&settings.targets[2]));
+    settings.targets.remove(0);
+    settings.normalize();
+    assert!(settings.checkout.enabled);
+    settings.targets.remove(0);
+    settings.normalize();
+    assert!(!settings.checkout.enabled);
 }
 
 #[test]

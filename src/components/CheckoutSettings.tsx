@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { AppWindow, LoaderCircle, PlayCircle, ShoppingCart } from "lucide-react";
 import { CollapsiblePanel } from "@/components/CollapsiblePanel";
 import { Button } from "@/components/ui/button";
@@ -72,12 +73,53 @@ function monitoredProducts(targets: Target[]): { key: string; name: string }[] {
   return [...products].map(([key, name]) => ({ key, name }));
 }
 
+function CheckoutLogin() {
+  const [status, setStatus] = useState({ saved: false });
+  const [account, setAccount] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const refresh = () => invoke<typeof status>("checkout_login_status").then(setStatus);
+  useEffect(() => { void refresh().catch(() => setMessage("无法读取自动登录配置")); }, []);
+  const save = async () => {
+    setBusy(true);
+    try {
+      await invoke("save_checkout_login", { account, password });
+      setPassword("");
+      setAccount("");
+      await refresh();
+      setMessage("已保存到软件配置");
+    } catch { setMessage("未能保存，请检查输入或配置文件权限"); }
+    finally { setBusy(false); }
+  };
+  const clear = async () => {
+    setBusy(true);
+    try { await invoke("clear_checkout_login"); await refresh(); setMessage("已移除自动登录信息"); }
+    catch { setMessage("未能移除，请检查配置文件权限"); }
+    finally { setBusy(false); }
+  };
+  return <div className="grid gap-2 rounded-xl border border-border/60 p-3">
+    <p className="text-sm">Apple 重新登录{status.saved ? " · 已保存" : " · 未设置"}</p>
+    <Label htmlFor="checkout-login-account">Apple 账户</Label>
+    <Input id="checkout-login-account" autoComplete="off" value={account} onChange={e => setAccount(e.target.value)} placeholder="电子邮件或电话号码" />
+    <Label htmlFor="checkout-login-password">密码</Label>
+    <Input id="checkout-login-password" type="password" autoComplete="off" value={password} onChange={e => setPassword(e.target.value)} placeholder={status.saved ? "已保存；输入新密码可更新" : "保存到软件配置"} />
+    <div className="flex gap-2">
+      <Button variant="outline" disabled={busy || !account.trim() || !password} onClick={() => void save()}>保存登录信息</Button>
+      {status.saved ? <Button variant="outline" disabled={busy} onClick={() => void clear()}>移除</Button> : null}
+    </div>
+    <p className="text-[11px] leading-4 text-muted-foreground">结账要求登录时自动填写并继续。同一次流程只提交一次密码；验证码或二次验证需你处理。账号密码以明文保存在本机 checkout-login.json，仅限当前系统用户访问。请勿分享该配置文件。</p>
+    {message ? <p className="text-xs" role="status">{message}</p> : null}
+  </div>;
+}
+
 export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; targets: Target[] }) {
   const products = monitoredProducts(targets);
   // 只监控一件时就是它；监控多件时以设置里选的为准，选的那件已不在列表里则视为没选。
   const chosen = products.length === 1
     ? products[0]!.key
     : products.some((product) => product.key === checkout.product) ? checkout.product : "";
+  const targetReady = checkout.autoAddToBag ? products.length > 0 : !!chosen;
   const [suffix, setSuffix] = useState(checkout.nationalIdSuffix);
   const [busy, setBusy] = useState<"open" | "test" | null>(null);
 
@@ -105,19 +147,47 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
       summary={summarize(checkout)}
     >
       <div className="grid min-w-0 gap-3">
+        <CheckoutLogin />
         <div className="setting-row">
           <Label htmlFor="checkout-enabled" className="text-sm font-normal">到货后自动结账</Label>
           <Switch
             id="checkout-enabled"
             checked={checkout.enabled}
-            disabled={(!suffixReady || !chosen) && !checkout.enabled}
+            disabled={(!suffixReady || !targetReady) && !checkout.enabled}
             onCheckedChange={(enabled) => save({ enabled })}
           />
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
-          购物袋里必须只有到货的那一件商品。成功执行一次后会自动关闭，需要时再手动开启。
+          {checkout.autoAddToBag ? <>
+            <strong className="text-foreground">开启前建议点击「打开下单浏览器」，手动清空专属购物袋，减少失败清理的等待。</strong>
+            <br />
+            按本次到货型号加购 1 件；提交前失败会清空专属购物袋，确认空袋后关闭页面并继续监控。清理未成功时，下次先继续清理再加购，自动结账保持开启。
+          </> : "购物袋里必须只有到货的那一件商品。"}
         </p>
-        <div className="field-group">
+        <div className="setting-row">
+          <Label htmlFor="checkout-disable-after-success" className="text-sm font-normal">成功后关闭自动结账</Label>
+          <Switch
+            id="checkout-disable-after-success"
+            checked={checkout.disableAfterSuccess}
+            onCheckedChange={(disableAfterSuccess) => save({ disableAfterSuccess })}
+          />
+        </div>
+        <p className="text-[11px] leading-4 break-words text-muted-foreground">
+          {checkout.disableAfterSuccess
+            ? "到达查看订单页或确认订单已提交后，关闭上方总开关。"
+            : "成功后保持总开关开启；监控继续运行时，持续有货会再次结账并切换当前页面，开启立即下单时可能生成多笔真实订单。"}
+          提交结果不明时仍会关闭自动结账并保留页面，避免重复下单。登录需验证时保留页面和开关，完成登录并停在取货方式页后，后续到货自动继续。
+        </p>
+        <div className="setting-row">
+          <Label htmlFor="checkout-auto-add" className="text-sm font-normal">按到货型号自动加入购物袋</Label>
+          <Switch id="checkout-auto-add" checked={!!checkout.autoAddToBag} onCheckedChange={(autoAddToBag) => save({ autoAddToBag })} />
+        </div>
+        <p className="text-[11px] leading-4 break-words text-muted-foreground">
+          {checkout.autoAddToBag
+            ? "监控列表中的中国大陆型号都可触发，同一时间只处理一件。已有本次型号 1 件时沿用；其他商品或数量不符会结束本轮并清空专属购物袋，下次有货重新加购。请勿在此购物袋保存其他商品，暂不支持需另选表带等组合配置。"
+            : "关闭时使用事先准备的购物袋，只对下面选定的商品结账。"}
+        </p>
+        {!checkout.autoAddToBag ? <div className="field-group">
           <Label htmlFor="checkout-product" className="control-label">要下单的商品</Label>
           {products.length > 1 ? (
             <Select value={chosen} onValueChange={(product) => save({ product })}>
@@ -144,7 +214,7 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
               只有这件商品到货才会结账，购物袋里也必须只放它。其他商品到货照常提醒，不会下单。
             </p>
           )}
-        </div>
+        </div> : null}
 
         <div className="field-group">
           <Label htmlFor="checkout-id-suffix" className="control-label">取货人证件号码后四位</Label>
@@ -292,7 +362,7 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
             type="button"
             variant="outline"
             className="h-10 rounded-xl border-border/70 bg-background/30"
-            disabled={busy !== null || !suffixReady || !chosen}
+            disabled={busy !== null || !suffixReady || !targetReady}
             onClick={() => void run("test", testCheckout)}
           >
             {busy === "test" ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <PlayCircle aria-hidden="true" />}
@@ -300,7 +370,9 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
           </Button>
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
-          首次使用先打开下单浏览器，登录 Apple 账户、加入商品并手动走一次结账。试跑用「要下单的商品」和它第一条监控项的门店，不会提交订单。
+          {checkout.autoAddToBag
+            ? "先在下单浏览器中登录并留空购物袋。试跑会加购监控列表中的第一件中国大陆商品，停在查看订单页，不会提交订单；试跑失败保留页面供检查。"
+            : "首次使用先打开下单浏览器，登录 Apple 账户、加入商品并手动走一次结账。试跑用「要下单的商品」和它第一条监控项的门店，不会提交订单。"}
         </p>
       </div>
     </CollapsiblePanel>

@@ -1392,7 +1392,7 @@ export default function App() {
                 </div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   {ui.settings.stopOnHit
-                    ? "任意一条监控到有货后暂停监控，提醒和自动结账只执行这一轮，需要时再手动开始。"
+                    ? "普通监控到货后暂停；开启自动结账时，失败会继续监控重试，完成结账或需要确认订单结果后才暂停。"
                     : "持续有货时，每一轮查询都会重新提醒；开启了自动结账且上一次没有成功时，也会再次尝试。"}
                 </p>
 

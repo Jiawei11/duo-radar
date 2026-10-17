@@ -1,8 +1,8 @@
 //! 到货后自动结账（中国大陆直营店取货）。
 //!
-//! 使用一个带窗口的专属 Chromium 会话：用户在里面登录 Apple 账户、把商品放进
-//! 购物袋；到货时由这里依次操作购物袋、选择门店、取货信息、付款方式和查看订单
-//! 五个页面。页面元素按 Apple 结账页的 `data-autom` 标识定位。
+//! 使用一个带窗口的专属 Chromium 会话。用户先登录，商品可预先放入购物袋，或
+//! 开启按到货型号自动加购；自动加购在提交前失败时先移除本次商品并确认空袋。
+//! 再依次选择门店、取货信息、付款方式和查看订单。页面元素按 `data-autom` 定位。
 //!
 //! 这个会话与库存查询的无头会话完全分开：资料目录不同，也不走线路轮换。登录
 //! 账户的会话频繁更换出口 IP 容易触发 Apple 的账户风控。
@@ -12,6 +12,7 @@
 
 use std::fmt;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 use apw_core::catalog::Catalog;
@@ -42,7 +43,9 @@ const ORDER_TIMEOUT: Duration = Duration::from_secs(45);
 pub enum Stage {
     Browser,
     Bag,
+    BagCleanup,
     SignIn,
+    SignInLoading,
     Fulfillment,
     PickupContact,
     Billing,
@@ -55,7 +58,9 @@ impl Stage {
         match self {
             Stage::Browser => "下单浏览器",
             Stage::Bag => "购物袋",
+            Stage::BagCleanup => "清理购物袋",
             Stage::SignIn => "登录",
+            Stage::SignInLoading => "登录页面加载",
             Stage::Fulfillment => "选择取货门店",
             Stage::PickupContact => "取货信息",
             Stage::Billing => "付款方式",
@@ -78,6 +83,11 @@ impl CheckoutError {
             message: message.into(),
         }
     }
+
+    /// 提交按钮可能已经送出请求，此时关闭页面并重试会有重复下单的风险。
+    fn can_retry(&self) -> bool {
+        !matches!(self.stage, Stage::PlaceOrder | Stage::SignIn)
+    }
 }
 
 impl fmt::Display for CheckoutError {
@@ -89,6 +99,9 @@ impl fmt::Display for CheckoutError {
 /// 一次自动结账要完成的内容。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CheckoutPlan {
+    pub auto_add_to_bag: bool,
+    pub part_number: String,
+    pub product_url: Option<String>,
     pub store_number: String,
     pub store_title: String,
     pub product_name: String,
@@ -154,6 +167,13 @@ impl CheckoutPlan {
             Vec::new()
         };
         Self {
+            auto_add_to_bag: settings.auto_add_to_bag,
+            part_number: target.part_number.clone(),
+            product_url: if target.companion_part.is_none() && target.kit_part.is_none() {
+                target.purchase_url(None)
+            } else {
+                None
+            },
             contact,
             monitored_stores,
             accept_nearest_store: settings.accept_nearest_store,
@@ -206,6 +226,10 @@ pub enum CheckoutOutcome {
 struct LineItem {
     name: String,
     quantity: String,
+    #[serde(default, rename = "partNumber")]
+    part_number: String,
+    #[serde(default, rename = "removeId")]
+    remove_id: String,
 }
 
 /// 型号名称只比较去掉空白后的文字，大小写不敏感。
@@ -270,30 +294,20 @@ const PAGE_STATE_JS: &str = r#"(() => {
 })()"#;
 
 /// 页面上当前可见的错误提示，用于解释为什么点了继续却没有前进。
-const PAGE_ERRORS_JS: &str = r#"(() => {
-  const nodes = [...document.querySelectorAll('[role="alert"], .rs-form-error, .form-message-wrapper, .rs-error-message')];
-  const texts = nodes.filter((e) => e.offsetParent).map((e) => (e.innerText || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
-  return JSON.stringify([...new Set(texts)].slice(0, 3));
-})()"#;
+const PAGE_ERRORS_JS: &str = concat!(
+    "JSON.stringify((",
+    include_str!("checkout_page_errors.js"),
+    ")())"
+);
 
 /// 购物袋页和查看订单页都用同一组 `bag-item-N` 标识列出商品。
-const LINE_ITEMS_JS: &str = r#"(() => {
-  const rows = [...document.querySelectorAll('[data-autom^="bag-item-"]')].filter((e) => /^bag-item-\d+$/.test(e.getAttribute('data-autom')));
-  const items = rows.map((row) => {
-    const title = row.querySelector('[data-autom="bag-item-name"], h2, h3');
-    const select = row.querySelector('select[data-autom="item-quantity-dropdown"]');
-    const text = (row.innerText || '').replace(/\s+/g, ' ');
-    const counted = text.match(/数量\s*(\d+)/);
-    return { name: (title ? title.innerText : '').replace(/\s+/g, ' ').trim(), quantity: select ? select.value : counted ? counted[1] : '' };
-  });
-  const total = document.querySelector('[data-autom="bagtotalvalue"]');
-  return JSON.stringify({
-    items,
-    total: total ? total.innerText.replace(/\s+/g, ' ').trim() : '',
-    canCheckout: !!document.querySelector('button[data-autom="checkout"]'),
-    canPlaceOrder: !!document.querySelector('button[data-autom="continue-button-placeOrder"]'),
-  });
-})()"#;
+const LINE_ITEMS_JS: &str = concat!(
+    "JSON.stringify((",
+    include_str!("checkout_line_items.js"),
+    ")((",
+    include_str!("checkout_page_errors.js"),
+    ")()))"
+);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -302,6 +316,47 @@ struct Lines {
     total: String,
     can_checkout: bool,
     can_place_order: bool,
+    #[serde(default)]
+    bag_ready: bool,
+    #[serde(default)]
+    bag_empty: bool,
+    #[serde(default)]
+    errors: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AddState {
+    ready: bool,
+    error: String,
+    point: Option<ClickPoint>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ClickPoint {
+    x: f64,
+    y: f64,
+}
+
+fn bag_action_js(plan: &CheckoutPlan, source: &str, action: &str, remove_id: &str) -> String {
+    format!(
+        "JSON.stringify(({})({},{}))",
+        source,
+        json!({"partNumber": plan.part_number, "productName": plan.product_name, "removeId": remove_id}),
+        js_string(action),
+    )
+}
+
+impl Lines {
+    fn verify(&self, stage: Stage, product_name: &str) -> Result<(), CheckoutError> {
+        if !self.errors.is_empty() {
+            return Err(CheckoutError::new(
+                stage,
+                format!("页面提示：{}", self.errors.join("；")),
+            ));
+        }
+        verify_items(&self.items, product_name)
+            .map_err(|message| CheckoutError::new(stage, message))
+    }
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -488,6 +543,26 @@ fn click_js(selector: &str) -> String {
     )
 }
 
+fn trusted_checkout_login_url(value: &str) -> bool {
+    let Ok(url) = reqwest::Url::parse(value) else {
+        return false;
+    };
+    let Some(host) = url.host_str() else {
+        return false;
+    };
+    let secure_number = host
+        .strip_prefix("secure")
+        .and_then(|s| s.strip_suffix(".www.apple.com.cn"));
+    url.scheme() == "https"
+        && url.port().is_none()
+        && secure_number.is_some_and(|s| !s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()))
+        && (url.path() == "/shop/signIn"
+            || (url.path() == "/shop/checkout"
+                && url
+                    .query_pairs()
+                    .any(|(k, v)| k == "_s" && v.starts_with("SignIn"))))
+}
+
 struct Flow<'a> {
     session: &'a mut ChromiumSession,
     plan: &'a CheckoutPlan,
@@ -495,6 +570,8 @@ struct Flow<'a> {
     /// 实际取货的门店。默认是到货的那一家，沿用结账页默认选中的门店时会变。
     store_number: String,
     store_title: String,
+    /// 只在初始空袋准备加购，或袋中已恰好为本次型号时接管清理。
+    owns_bag: bool,
 }
 
 impl Flow<'_> {
@@ -567,19 +644,46 @@ impl Flow<'_> {
         if clicked.as_bool() == Some(true) {
             Ok(())
         } else {
+            // 只有脚本明确返回 false 才能确认没有点击。连接报错或没有读到布尔结果
+            // 时仍按 PlaceOrder 处理，因为无法知道请求是否已经送出。
+            let stage = if stage == Stage::PlaceOrder && clicked.as_bool() == Some(false) {
+                Stage::Review
+            } else {
+                stage
+            };
             Err(CheckoutError::new(stage, format!("「{name}」按钮不可点击")))
         }
     }
 
-    /// 等结账流程进入下一页。途中出现登录页就立即停下，交给用户处理。
+    /// 等结账流程进入下一页。重新登录成功后继续本次流程。
     async fn wait_for_step(
         &mut self,
         stage: Stage,
         step_prefix: &str,
     ) -> Result<(), CheckoutError> {
-        let deadline = Instant::now() + NAVIGATION_TIMEOUT;
+        let mut deadline = Instant::now() + NAVIGATION_TIMEOUT;
+        let mut signed_in = false;
         loop {
             if let Ok(state) = self.read::<PageState>(PAGE_STATE_JS).await {
+                if state.sign_in {
+                    if signed_in {
+                        return Err(CheckoutError::new(
+                            Stage::SignIn,
+                            "登录后又返回登录页，请检查账户验证",
+                        ));
+                    }
+                    self.sign_in().await?;
+                    signed_in = true;
+                    deadline = Instant::now() + NAVIGATION_TIMEOUT;
+                    continue;
+                }
+                let errors: Vec<String> = self.read(PAGE_ERRORS_JS).await.unwrap_or_default();
+                if !errors.is_empty() {
+                    return Err(CheckoutError::new(
+                        stage,
+                        format!("页面提示：{}", errors.join("；")),
+                    ));
+                }
                 if state.step.starts_with(step_prefix) {
                     #[cfg(test)]
                     eprintln!(
@@ -587,12 +691,6 @@ impl Flow<'_> {
                         (NAVIGATION_TIMEOUT - (deadline - Instant::now())).as_secs_f32()
                     );
                     return Ok(());
-                }
-                if state.sign_in {
-                    return Err(CheckoutError::new(
-                        Stage::SignIn,
-                        "Apple 要求重新登录。请在下单浏览器里登录并手动走一次结账，之后再开启自动结账",
-                    ));
                 }
             }
             if Instant::now() >= deadline {
@@ -611,30 +709,408 @@ impl Flow<'_> {
         }
     }
 
-    async fn bag(&mut self) -> Result<(), CheckoutError> {
-        self.report("自动结账：打开购物袋");
+    async fn sign_in(&mut self) -> Result<(), CheckoutError> {
+        let fail = |message| CheckoutError::new(Stage::SignIn, message);
+        let login = crate::checkout_login::load()
+            .map_err(fail)?
+            .ok_or_else(|| {
+                fail(
+                    "Apple 要求登录，请在自动结账设置中保存登录信息，或在下单浏览器中手动登录"
+                        .into(),
+                )
+            })?;
+        self.report("自动结账：Apple 要求重新登录，正在使用软件配置中的账户登录");
+        let deadline = Instant::now() + Duration::from_secs(90);
+        let mut account_sent = false;
+        let mut password_sent = false;
+        while Instant::now() < deadline {
+            let state = self.read::<PageState>(PAGE_STATE_JS).await;
+            if state
+                .as_ref()
+                .is_ok_and(|s| !s.sign_in && s.step.starts_with("Fulfillment"))
+            {
+                self.report("自动结账：Apple 登录成功，继续本次结账");
+                return Ok(());
+            }
+            if let Some(context) = self.login_context().await? {
+                let status = self
+                    .login_action(context, &login.account, "", "inspect")
+                    .await?;
+                let action = match status.as_str() {
+                    "account" if !account_sent && !password_sent => Some("account"),
+                    "password" if !password_sent => Some("password"),
+                    "verification" => {
+                        return Err(fail(
+                            "Apple 要求验证码或二次验证，已保留页面，请手动完成验证".into(),
+                        ));
+                    }
+                    "error" => {
+                        return Err(fail(
+                            "Apple 登录未通过，已保留页面，请检查账户或密码；不会重复尝试密码"
+                                .into(),
+                        ));
+                    }
+                    "accountMismatch" => {
+                        return Err(fail(
+                            "登录页账户与配置账户不一致，未填写密码，请手动确认".into(),
+                        ));
+                    }
+                    "untrusted" => return Err(fail("登录页面来源不符合预期，未填写密码".into())),
+                    _ => None,
+                };
+                if let Some(action) = action {
+                    let status = self
+                        .login_action(
+                            context,
+                            &login.account,
+                            if action == "password" {
+                                &login.password
+                            } else {
+                                ""
+                            },
+                            action,
+                        )
+                        .await?;
+                    account_sent |= status == "accountSubmitted";
+                    password_sent |= status == "passwordSubmitted";
+                }
+            }
+            tokio::time::sleep(Duration::from_millis(300)).await;
+        }
+        Err(CheckoutError::new(
+            Stage::SignInLoading,
+            "等待 Apple 登录完成超时，将清理购物袋后等待下次到货重试",
+        ))
+    }
+
+    async fn login_context(&mut self) -> Result<Option<u64>, CheckoutError> {
+        let fail = || CheckoutError::new(Stage::SignInLoading, "暂时无法读取 Apple 登录页面");
+        let tree = self
+            .session
+            .command("Page.getFrameTree", json!({}))
+            .await
+            .map_err(|_| fail())?;
+        let Some(tree) = tree.get("frameTree") else {
+            return Ok(None);
+        };
+        let top = tree
+            .pointer("/frame/url")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        if !trusted_checkout_login_url(top) {
+            return Ok(None);
+        }
+        let frame = tree
+            .get("childFrames")
+            .and_then(|v| v.as_array())
+            .into_iter()
+            .flatten()
+            .find(|child| {
+                child
+                    .pointer("/frame/securityOrigin")
+                    .and_then(|v| v.as_str())
+                    == Some("https://idmsa.apple.com.cn")
+            });
+        let Some(frame_id) = frame
+            .and_then(|f| f.pointer("/frame/id"))
+            .and_then(|v| v.as_str())
+        else {
+            return Ok(None);
+        };
+        let world = self
+            .session
+            .command(
+                "Page.createIsolatedWorld",
+                json!({"frameId":frame_id,"worldName":"apw-checkout-login"}),
+            )
+            .await
+            .map_err(|_| fail())?;
+        Ok(world.get("executionContextId").and_then(|v| v.as_u64()))
+    }
+
+    async fn login_action(
+        &mut self,
+        context: u64,
+        account: &str,
+        password: &str,
+        action: &str,
+    ) -> Result<String, CheckoutError> {
+        let result = self.session.command("Runtime.callFunctionOn", json!({
+            "executionContextId":context,
+            "functionDeclaration":format!("function(expected, action) {{ return ({})(expected, action); }}", include_str!("checkout_sign_in.js")),
+            "arguments":[{"value":{"account":account,"password":password}},{"value":action}],
+            "returnByValue":true,
+        })).await.map_err(|_| CheckoutError::new(Stage::SignInLoading, "登录页面发生变化，将重新确认页面状态"))?;
+        if result.get("exceptionDetails").is_some() {
+            return Err(CheckoutError::new(
+                Stage::SignInLoading,
+                "登录控件暂时无法操作",
+            ));
+        }
+        Ok(result
+            .pointer("/result/value")
+            .and_then(|v| v.as_str())
+            .unwrap_or("waiting")
+            .to_owned())
+    }
+
+    async fn navigate(&mut self, url: &str, stage: Stage) -> Result<(), CheckoutError> {
+        if self.plan.auto_add_to_bag {
+            self.session
+                .evaluate("window.__apwCheckoutNavigating = true", false)
+                .await
+                .map_err(|e| CheckoutError::new(stage, e.to_string()))?;
+        }
         let navigation = self
             .session
-            .command("Page.navigate", json!({ "url": BAG_URL }))
+            .command("Page.navigate", json!({ "url": url }))
             .await
-            .map_err(|e| CheckoutError::new(Stage::Bag, e.to_string()))?;
+            .map_err(|e| CheckoutError::new(stage, e.to_string()))?;
         if let Some(error) = navigation
             .get("errorText")
             .and_then(serde_json::Value::as_str)
             .filter(|error| !error.trim().is_empty())
         {
+            return Err(CheckoutError::new(stage, format!("页面打不开：{error}")));
+        }
+        if self.plan.auto_add_to_bag {
+            // 同一购物袋 URL 的刷新也必须等到新文档，不能把旧页面的空袋动画
+            // 当成服务器已经移除商品的证据。
+            self.wait(
+                stage,
+                "JSON.stringify(!window.__apwCheckoutNavigating)",
+                NAVIGATION_TIMEOUT,
+                "新页面加载",
+                |ready: &bool| *ready,
+            )
+            .await?;
+        }
+        Ok(())
+    }
+
+    fn verify_auto_bag(&self, lines: &Lines) -> Result<(), CheckoutError> {
+        verify_items(&lines.items, &self.plan.product_name)
+            .map_err(|message| CheckoutError::new(Stage::Bag, message))?;
+        let item = &lines.items[0];
+        if item.quantity != "1"
+            || !item
+                .part_number
+                .eq_ignore_ascii_case(&self.plan.part_number)
+        {
             return Err(CheckoutError::new(
                 Stage::Bag,
-                format!("购物袋页面打不开：{error}"),
+                "购物袋的零件号或数量与本次到货型号不一致",
             ));
         }
+        Ok(())
+    }
+
+    async fn read_bag(&mut self, stage: Stage) -> Result<Lines, CheckoutError> {
+        self.navigate(BAG_URL, stage).await?;
+        self.wait(
+            stage,
+            LINE_ITEMS_JS,
+            ELEMENT_TIMEOUT,
+            "购物袋加载完成",
+            |s: &Lines| s.bag_ready,
+        )
+        .await
+    }
+
+    async fn prepare_bag(&mut self) -> Result<(), CheckoutError> {
+        if self.plan.product_url.is_none() {
+            return Err(CheckoutError::new(
+                Stage::Bag,
+                "此型号需要额外配置，暂不支持自动加购，请使用预先准备购物袋的方式",
+            ));
+        }
+        self.report("自动加购：检查购物袋");
+        let initial = self.read_bag(Stage::Bag).await?;
+        if !initial.items.is_empty() {
+            // 用户本来就放了同型号的一件时可直接使用；从不叠加数量或清除其他型号。
+            self.verify_auto_bag(&initial).map_err(|error| {
+                CheckoutError::new(
+                    Stage::BagCleanup,
+                    format!(
+                        "购物袋已有其他商品或数量不符，未加购也未删除：{}。请先整理专属购物袋",
+                        error.message
+                    ),
+                )
+            })?;
+            self.owns_bag = true;
+            self.report("自动加购：购物袋已恰好为本次到货型号，沿用 1 件");
+            return Ok(());
+        }
+        if !initial.bag_empty {
+            return Err(CheckoutError::new(
+                Stage::Bag,
+                "尚未确认购物袋为空，未执行加购",
+            ));
+        }
+        self.report(format!("自动加购：打开 {} 商品页", self.plan.product_name));
+        let url = self
+            .plan
+            .product_url
+            .as_deref()
+            .unwrap_or(BAG_URL)
+            .to_owned();
+        self.navigate(&url, Stage::Bag).await?;
+        let prepare = bag_action_js(
+            self.plan,
+            include_str!("checkout_add_to_bag.js"),
+            "prepare",
+            "",
+        );
+        let add = bag_action_js(self.plan, include_str!("checkout_add_to_bag.js"), "add", "");
+        let deadline = Instant::now() + ELEMENT_TIMEOUT;
+        loop {
+            let ready: AddState = self
+                .wait(
+                    Stage::Bag,
+                    &prepare,
+                    deadline.saturating_duration_since(Instant::now()),
+                    "到货型号的加购按钮",
+                    |s: &AddState| s.ready || !s.error.is_empty(),
+                )
+                .await?;
+            if !ready.error.is_empty() {
+                return Err(CheckoutError::new(Stage::Bag, ready.error));
+            }
+            // 从真正点击前接管清理。请求出错或结果丢失立即退出，绝不重发加购。
+            self.owns_bag = true;
+            let added: AddState = self
+                .read(&add)
+                .await
+                .map_err(|e| CheckoutError::new(Stage::Bag, e))?;
+            if let Some(point) = added.point {
+                #[cfg(test)]
+                if std::env::var_os("APW_DIAG_AUTO_BAG").is_some() {
+                    eprintln!("加购按钮诊断：{:?}", self.session.evaluate(r#"JSON.stringify((()=>{const b=document.querySelector('button[data-autom="add-to-cart"]');const f=b?.form;return {url:location.href, ready:document.readyState, button:b?.outerHTML, form:f?{action:f.getAttribute('action'),method:f.method,products:[...f.querySelectorAll('input[name="product"]')].map(e=>e.value)}:null};})())"#, false).await);
+                }
+                for kind in ["mousePressed", "mouseReleased"] {
+                    self.session.command("Input.dispatchMouseEvent", json!({
+                        "type": kind, "x": point.x, "y": point.y, "button": "left", "clickCount": 1,
+                    })).await.map_err(|e| CheckoutError::new(Stage::Bag, e.to_string()))?;
+                }
+                break;
+            }
+            if !added.error.is_empty() || Instant::now() >= deadline {
+                return Err(CheckoutError::new(
+                    Stage::Bag,
+                    if added.error.is_empty() {
+                        "加购按钮不可点击".into()
+                    } else {
+                        added.error
+                    },
+                ));
+            }
+            // 仅脚本明确返回未点击时才重新等准备状态。React 的异步重绘会短暂禁用按钮。
+            tokio::time::sleep(POLL_INTERVAL).await;
+        }
+        // Apple 会先跳转配件推荐页；等加购完成后直接进购物袋，跳过全部推荐配件。
+        let added: String = self.wait(Stage::Bag, r#"JSON.stringify(location.pathname === '/shop/bag' || new URLSearchParams(location.search).get('step') === 'attach' ? 'complete' : /Page Not Found/i.test(document.title) ? 'failed' : 'waiting')"#,
+            NAVIGATION_TIMEOUT, "加购完成", |state: &String| state != "waiting").await?;
+        if added == "failed" {
+            return Err(CheckoutError::new(Stage::Bag, "Apple 加购页面返回 404"));
+        }
+        let lines = self.read_bag(Stage::Bag).await?;
+        self.verify_auto_bag(&lines)?;
+        self.report(format!(
+            "自动加购：已确认 {} 1 件，购物袋无其他商品",
+            self.plan.product_name
+        ));
+        Ok(())
+    }
+
+    async fn cleanup_bag(&mut self) -> Result<(), CheckoutError> {
+        let stage = Stage::BagCleanup;
+        self.report("自动加购：本次结账失败，清理本次购物袋");
+        let mut lines = self.read_bag(stage).await?;
+        let deadline = Instant::now() + NAVIGATION_TIMEOUT;
+        let mut changed = false;
+        loop {
+            if let Some(item) = lines.items.first() {
+                if item.remove_id.is_empty() || Instant::now() >= deadline {
+                    return Err(CheckoutError::new(
+                        stage,
+                        "购物袋条目尚不可移除，下次先继续清理",
+                    ));
+                }
+                let previous_count = lines.items.len();
+                let item = item.clone();
+                let action = |action: &str| {
+                    format!(
+                        "JSON.stringify(({})({},{}))",
+                        include_str!("checkout_remove_from_bag.js"),
+                        json!({"partNumber": item.part_number, "productName": item.name,
+                        "quantity": item.quantity, "removeId": item.remove_id}),
+                        js_string(action),
+                    )
+                };
+                self.wait(
+                    stage,
+                    &action("ready"),
+                    deadline.saturating_duration_since(Instant::now()),
+                    "购物袋条目可移除",
+                    |ready: &bool| *ready,
+                )
+                .await?;
+                self.report(format!(
+                    "自动加购：移除失败购物袋中的「{}」（数量 {}）",
+                    item.name, item.quantity
+                ));
+                let removed: bool = self
+                    .read(&action("remove"))
+                    .await
+                    .map_err(|e| CheckoutError::new(stage, e))?;
+                if !removed {
+                    return Err(CheckoutError::new(
+                        stage,
+                        "购物袋条目发生变化，下次重新读取后继续清理",
+                    ));
+                }
+                // Apple 先隐藏删除按钮，再移除整行，必须等条目数减少。
+                lines = self
+                    .wait(
+                        stage,
+                        LINE_ITEMS_JS,
+                        deadline.saturating_duration_since(Instant::now()),
+                        "购物袋条目移除完成",
+                        |s: &Lines| s.bag_ready && s.items.len() < previous_count,
+                    )
+                    .await?;
+                changed = true;
+            } else if changed {
+                lines = self.read_bag(stage).await?;
+                changed = false;
+            } else if lines.bag_empty {
+                break;
+            } else {
+                return Err(CheckoutError::new(
+                    stage,
+                    "未能确认购物袋为空，下次先继续清理",
+                ));
+            }
+        }
+        self.report("自动加购：本次商品已移除，已确认购物袋为空");
+        Ok(())
+    }
+
+    async fn bag(&mut self) -> Result<(), CheckoutError> {
+        if self.plan.auto_add_to_bag {
+            self.prepare_bag().await?;
+        }
+        self.report("自动结账：打开购物袋");
+        self.navigate(BAG_URL, Stage::Bag).await?;
         let lines: Lines = self
             .wait(
                 Stage::Bag,
                 LINE_ITEMS_JS,
                 ELEMENT_TIMEOUT,
                 "购物袋出现可结账的商品",
-                |lines: &Lines| lines.can_checkout && !lines.items.is_empty(),
+                |lines: &Lines| {
+                    !lines.errors.is_empty() || (lines.can_checkout && !lines.items.is_empty())
+                },
             )
             .await
             .map_err(|_| {
@@ -643,8 +1119,10 @@ impl Flow<'_> {
                     "购物袋里没有可结账的商品，请先在下单浏览器里登录并把商品加入购物袋",
                 )
             })?;
-        verify_items(&lines.items, &self.plan.product_name)
-            .map_err(|message| CheckoutError::new(Stage::Bag, message))?;
+        lines.verify(Stage::Bag, &self.plan.product_name)?;
+        if self.plan.auto_add_to_bag {
+            self.verify_auto_bag(&lines)?;
+        }
         self.click(Stage::Bag, r#"button[data-autom="checkout"]"#, "结账")
             .await?;
         self.wait_for_step(Stage::Bag, "Fulfillment").await
@@ -1163,11 +1641,25 @@ impl Flow<'_> {
                 LINE_ITEMS_JS,
                 ELEMENT_TIMEOUT,
                 "订单确认内容",
-                |lines: &Lines| lines.can_place_order && !lines.items.is_empty(),
+                |lines: &Lines| {
+                    !lines.errors.is_empty() || (lines.can_place_order && !lines.items.is_empty())
+                },
             )
             .await?;
-        verify_items(&lines.items, &self.plan.product_name)
-            .map_err(|message| CheckoutError::new(stage, message))?;
+        lines.verify(stage, &self.plan.product_name)?;
+        if self.plan.auto_add_to_bag
+            && lines.items.iter().any(|item| {
+                !item.part_number.is_empty()
+                    && !item
+                        .part_number
+                        .eq_ignore_ascii_case(&self.plan.part_number)
+            })
+        {
+            return Err(CheckoutError::new(
+                stage,
+                "查看订单页的零件号与本次到货型号不一致",
+            ));
+        }
         if !self.plan.place_order {
             return Ok(CheckoutOutcome::ReachedReview {
                 store: self.store_title.clone(),
@@ -1214,11 +1706,36 @@ impl Flow<'_> {
 #[derive(Clone, Default)]
 pub struct CheckoutRunner {
     session: Arc<Mutex<Option<ChromiumSession>>>,
+    reserved: Arc<AtomicBool>,
+    /// 清理结果未确认前，下一次必须先清理，不能沿用失败商品或叠加加购。
+    cleanup_pending: Arc<AtomicBool>,
+    /// 账户验证失败后只观察保留页面，不跨轮次重复提交密码。
+    login_blocked: Arc<AtomicBool>,
+}
+
+/// 从到货事件分派直到结果写回设置都占住名额，避免多型号同时到货时排队下两单。
+pub struct CheckoutReservation(Arc<AtomicBool>);
+
+impl Drop for CheckoutReservation {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
 }
 
 impl CheckoutRunner {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn try_reserve(&self) -> Option<CheckoutReservation> {
+        if self.is_busy() {
+            return None;
+        }
+        let _session = self.session.try_lock().ok()?;
+        self.reserved
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .ok()?;
+        Some(CheckoutReservation(self.reserved.clone()))
     }
 
     /// 确保下单浏览器开着并且连接可用；用户关掉窗口后会重新启动。
@@ -1247,10 +1764,13 @@ impl CheckoutRunner {
         let session = Self::ensure(&mut slot).await?;
         let browser_error =
             |e: apw_core::apple::ApiError| CheckoutError::new(Stage::Browser, e.to_string());
-        session
-            .command("Page.navigate", json!({ "url": BAG_URL }))
-            .await
-            .map_err(browser_error)?;
+        // 等待验证码时保留当前页面，打开按钮只把它带到前台。
+        if !self.login_blocked.load(Ordering::Acquire) {
+            session
+                .command("Page.navigate", json!({ "url": BAG_URL }))
+                .await
+                .map_err(browser_error)?;
+        }
         session
             .command("Page.bringToFront", json!({}))
             .await
@@ -1264,29 +1784,106 @@ impl CheckoutRunner {
         plan: &CheckoutPlan,
         progress: &(dyn Fn(String) + Send + Sync),
     ) -> Result<CheckoutOutcome, CheckoutError> {
+        self.run_inner(plan, progress, false).await
+    }
+
+    /// 到货后的自动结账：提交前失败就关闭专属窗口，保留资料目录供下一轮重开。
+    /// 试跑仍使用 `run`，留下页面供用户排查。
+    pub async fn run_on_hit(
+        &self,
+        plan: &CheckoutPlan,
+        progress: &(dyn Fn(String) + Send + Sync),
+    ) -> Result<CheckoutOutcome, CheckoutError> {
+        self.run_inner(plan, progress, true).await
+    }
+
+    async fn run_inner(
+        &self,
+        plan: &CheckoutPlan,
+        progress: &(dyn Fn(String) + Send + Sync),
+        close_on_failure: bool,
+    ) -> Result<CheckoutOutcome, CheckoutError> {
+        if !close_on_failure && self.reserved.load(Ordering::Acquire) {
+            return Err(CheckoutError::new(
+                Stage::Browser,
+                "已有一次自动结账正在进行",
+            ));
+        }
         let Ok(mut slot) = self.session.try_lock() else {
             return Err(CheckoutError::new(
                 Stage::Browser,
                 "已有一次结账正在进行，本次到货没有重复触发",
             ));
         };
-        let session = Self::ensure(&mut slot).await?;
-        // 把窗口带到前台：流程停下时用户需要立刻看到页面。
-        let _ = session.command("Page.bringToFront", json!({})).await;
-        Flow {
-            session,
-            plan,
-            progress,
-            store_number: plan.store_number.clone(),
-            store_title: plan.store_title.clone(),
+        let result = async {
+            let session = Self::ensure(&mut slot).await?;
+            let _ = session.command("Page.bringToFront", json!({})).await;
+            let mut flow = Flow {
+                session,
+                plan,
+                progress,
+                store_number: plan.store_number.clone(),
+                store_title: plan.store_title.clone(),
+                owns_bag: false,
+            };
+            if self.login_blocked.load(Ordering::Acquire) {
+                let resumed = flow
+                    .read::<PageState>(PAGE_STATE_JS)
+                    .await
+                    .is_ok_and(|state| !state.sign_in && state.step.starts_with("Fulfillment"));
+                if !resumed {
+                    return Err(CheckoutError::new(
+                        Stage::SignIn,
+                        "正在等待当前页面完成 Apple 登录或验证；自动结账保持开启，不重复提交密码",
+                    ));
+                }
+                self.login_blocked.store(false, Ordering::Release);
+                progress("自动结账：已确认登录恢复，继续清理和重试".into());
+            }
+            if self.cleanup_pending.load(Ordering::Acquire) {
+                progress("自动加购：上次清理尚未完成，先确认空袋再处理本次到货".into());
+                flow.cleanup_bag().await?;
+                self.cleanup_pending.store(false, Ordering::Release);
+            }
+            let result = flow.run().await;
+            if close_on_failure && let Err(original) = &result {
+                if original.stage == Stage::SignIn {
+                    self.login_blocked.store(true, Ordering::Release);
+                }
+                if plan.auto_add_to_bag && original.stage != Stage::PlaceOrder {
+                    self.cleanup_pending.store(true, Ordering::Release);
+                }
+                if (plan.auto_add_to_bag || flow.owns_bag) && original.can_retry() {
+                    if let Err(cleanup) = flow.cleanup_bag().await {
+                        return Err(CheckoutError::new(
+                            Stage::BagCleanup,
+                            format!(
+                                "{original}；清理未完成：{}；自动结账保持开启，下次先继续清理",
+                                cleanup.message
+                            ),
+                        ));
+                    }
+                    self.cleanup_pending.store(false, Ordering::Release);
+                }
+            }
+            result
         }
-        .run()
-        .await
+        .await;
+        if close_on_failure
+            && result.as_ref().is_err_and(|error| error.can_retry())
+            && let Some(mut session) = slot.take()
+        {
+            // 清理完成前一直持有锁，避免下一次结账与旧浏览器争用资料目录。
+            session.close().await;
+            drop(session);
+            progress("自动结账：已关闭本次下单页面，等待下一次有货".into());
+        }
+        result
     }
 
     /// 是否有一次结账正在进行。
     pub fn is_busy(&self) -> bool {
-        self.session.try_lock().is_err()
+        self.reserved.load(Ordering::Acquire) || self.session.try_lock().is_err()
     }
 
     pub async fn shutdown(&self) {
@@ -1297,6 +1894,739 @@ impl CheckoutRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn 登录只允许官方安全结账入口() {
+        assert!(trusted_checkout_login_url(
+            "https://secure6.www.apple.com.cn/shop/signIn?ssi=test"
+        ));
+        assert!(trusted_checkout_login_url(
+            "https://secure12.www.apple.com.cn/shop/checkout?_s=SignIn"
+        ));
+        for url in [
+            "http://secure6.www.apple.com.cn/shop/signIn",
+            "https://secure6.www.apple.com.cn.example.test/shop/signIn",
+            "https://secure.www.apple.com.cn/shop/signIn",
+            "https://secure6.www.apple.com.cn/shop/checkout?_s=Review",
+            "https://example.test/shop/signIn",
+        ] {
+            assert!(!trusted_checkout_login_url(url));
+        }
+    }
+
+    fn test_plan(place_order: bool) -> CheckoutPlan {
+        CheckoutPlan {
+            auto_add_to_bag: false,
+            part_number: "MK2Q4CH/A".into(),
+            product_url: Some("https://www.apple.com.cn/shop/product/MK2Q4CH/A".into()),
+            store_number: "R678".into(),
+            store_title: "Apple 静安".into(),
+            product_name: "要买的商品".into(),
+            pickup_region: None,
+            national_id_suffix: "0000".into(),
+            payment: CheckoutPayment::Alipay,
+            installment_bank: String::new(),
+            installment_periods: 24,
+            place_order,
+            monitored_stores: Vec::new(),
+            accept_nearest_store: false,
+            contact: Vec::new(),
+        }
+    }
+
+    fn cdp_page(value: serde_json::Value) -> serde_json::Value {
+        json!({"result": {"result": {"value": value.to_string()}}})
+    }
+
+    async fn review_result(
+        responses: Vec<serde_json::Value>,
+        place_order: bool,
+    ) -> (
+        Result<CheckoutOutcome, CheckoutError>,
+        Vec<serde_json::Value>,
+    ) {
+        let (mut session, peer, requests) =
+            crate::chromium_fetcher::tests::checkout_session(responses).await;
+        let plan = test_plan(place_order);
+        let result = Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &|_| {},
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: false,
+        }
+        .review()
+        .await;
+        drop(session);
+        assert!(peer.await.unwrap());
+        let requests = requests.lock().await.clone();
+        (result, requests)
+    }
+
+    #[tokio::test]
+    async fn 核对页出现售罄提示不会当作结账完成或继续提交() {
+        for place_order in [false, true] {
+            let (result, requests) = review_result(
+                vec![cdp_page(json!({
+                    "items": [{"name": "要买的商品", "quantity": "1"}],
+                    "total": "100",
+                    "canCheckout": false,
+                    "canPlaceOrder": true,
+                    "errors": ["商品已售罄，请稍后重试"],
+                }))],
+                place_order,
+            )
+            .await;
+            let error = result.unwrap_err();
+            assert_eq!(error.stage, Stage::Review);
+            assert!(error.can_retry());
+            assert!(error.message.contains("售罄"));
+            assert_eq!(requests.len(), 1, "只读取核对页，不能点击提交按钮");
+        }
+    }
+
+    #[tokio::test]
+    async fn 明确未点击提交可以重试而提交连接报错必须人工确认() {
+        for (click_response, expected_stage) in [
+            (
+                json!({"result": {"result": {"value": false}}}),
+                Stage::Review,
+            ),
+            (
+                json!({"error": {"message": "connection lost"}}),
+                Stage::PlaceOrder,
+            ),
+            (json!({"result": {"result": {}}}), Stage::PlaceOrder),
+        ] {
+            let (result, requests) = review_result(
+                vec![
+                    cdp_page(json!({
+                        "items": [{"name": "要买的商品", "quantity": "1"}],
+                        "total": "100", "canCheckout": false,
+                        "canPlaceOrder": true, "errors": [],
+                    })),
+                    click_response,
+                ],
+                true,
+            )
+            .await;
+            let error = result.unwrap_err();
+            assert_eq!(error.stage, expected_stage);
+            assert_eq!(error.can_retry(), expected_stage == Stage::Review);
+            assert_eq!(requests.len(), 2, "提交按钮只尝试点击一次");
+        }
+    }
+
+    #[tokio::test]
+    async fn 进入门店页同时出现售罄错误不能当作成功前进() {
+        let (mut session, peer, _) = crate::chromium_fetcher::tests::checkout_session(vec![
+            cdp_page(json!({"step": "Fulfillment", "signIn": false})),
+            cdp_page(json!(["商品已售罄"])),
+        ])
+        .await;
+        let plan = test_plan(true);
+        let error = Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &|_| {},
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: false,
+        }
+        .wait_for_step(Stage::Bag, "Fulfillment")
+        .await
+        .unwrap_err();
+        assert!(error.can_retry());
+        assert!(error.message.contains("售罄"));
+        drop(session);
+        assert!(peer.await.unwrap());
+    }
+
+    #[test]
+    fn 提交订单结果不明时不能关闭页面重试() {
+        for stage in [
+            Stage::Browser,
+            Stage::Bag,
+            Stage::BagCleanup,
+            Stage::SignInLoading,
+            Stage::Fulfillment,
+            Stage::PickupContact,
+            Stage::Billing,
+            Stage::Review,
+        ] {
+            assert!(CheckoutError::new(stage, "test").can_retry());
+        }
+        assert!(!CheckoutError::new(Stage::PlaceOrder, "test").can_retry());
+        assert!(!CheckoutError::new(Stage::SignIn, "test").can_retry());
+    }
+
+    #[tokio::test]
+    async fn 自动结账失败会关闭窗口而试跑保留失败现场() {
+        for (automatic, sold_out) in [(true, false), (false, false), (true, true), (false, true)] {
+            let mut responses = vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                json!({"result": {"frameId": "bag"}}),
+                json!({"result": {"result": {"value": json!({
+                    "items": if sold_out { json!([]) } else { json!([{"name": "另一件商品", "quantity": "1"}]) },
+                    "total": "100",
+                    "canCheckout": true,
+                    "canPlaceOrder": false,
+                    "errors": if sold_out { vec!["商品已售罄"] } else { Vec::<&str>::new() },
+                }).to_string()}}}),
+            ];
+            if automatic {
+                responses.push(json!({"result": {}}));
+            }
+            let (session, peer, requests) =
+                crate::chromium_fetcher::tests::checkout_session(responses).await;
+            let runner = CheckoutRunner {
+                session: Arc::new(Mutex::new(Some(session))),
+                ..Default::default()
+            };
+            let plan = CheckoutPlan {
+                auto_add_to_bag: false,
+                part_number: "MK2Q4CH/A".into(),
+                product_url: Some("https://www.apple.com.cn/shop/product/MK2Q4CH/A".into()),
+                store_number: "R678".into(),
+                store_title: "Apple 静安".into(),
+                product_name: "要买的商品".into(),
+                pickup_region: None,
+                national_id_suffix: "0000".into(),
+                payment: CheckoutPayment::Alipay,
+                installment_bank: String::new(),
+                installment_periods: 24,
+                place_order: true,
+                monitored_stores: Vec::new(),
+                accept_nearest_store: false,
+                contact: Vec::new(),
+            };
+            let result = if automatic {
+                runner.run_on_hit(&plan, &|_| {}).await
+            } else {
+                runner.run(&plan, &|_| {}).await
+            };
+            let error = result.unwrap_err();
+            assert_eq!(error.stage, Stage::Bag);
+            if sold_out {
+                assert!(error.message.contains("售罄"));
+            }
+            assert_eq!(peer.await.unwrap(), automatic, "CDP 连接是否已关闭");
+            assert_eq!(runner.session.lock().await.is_none(), automatic);
+            let requests = requests.lock().await;
+            assert_eq!(requests[2]["params"]["url"], BAG_URL);
+            assert_eq!(
+                requests.iter().any(|r| r["method"] == "Browser.close"),
+                automatic,
+            );
+            assert!(!runner.is_busy());
+            runner.shutdown().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn 自动加购失败先移除并刷新确认空袋再关闭窗口() {
+        for removed in [true, false] {
+            let mut plan = test_plan(true);
+            plan.auto_add_to_bag = true;
+            let empty = cdp_page(json!({
+                "items": [], "total": "", "canCheckout": false, "canPlaceOrder": false,
+                "bagReady": true, "bagEmpty": true, "errors": [],
+            }));
+            let full = cdp_page(json!({
+                "items": [{"name": plan.product_name, "quantity": "1", "partNumber": plan.part_number, "removeId": "owned-item.delete"}],
+                "total": "100", "canCheckout": true, "canPlaceOrder": false,
+                "bagReady": true, "bagEmpty": false, "errors": [],
+            }));
+            let mut sold_out = full.clone();
+            let mut data: serde_json::Value =
+                serde_json::from_str(sold_out["result"]["result"]["value"].as_str().unwrap())
+                    .unwrap();
+            data["errors"] = json!(["商品已售罄"]);
+            sold_out["result"]["result"]["value"] = json!(data.to_string());
+            let navigate = json!({"result": {"frameId": "page"}});
+            let mut responses = vec![
+                json!({"result": {"result": {"value": 1}}}), // ensure
+                json!({"result": {}}),                       // bring to front
+                navigate.clone(),
+                empty.clone(), // 加购前确认空袋
+                navigate.clone(),
+                cdp_page(json!({"ready": true, "clicked": false, "error": ""})),
+                cdp_page(json!({"ready": true, "point": {"x": 10, "y": 20}, "error": ""})),
+                json!({"result": {}}),
+                json!({"result": {}}),       // 真实鼠标按下、释放各一次
+                cdp_page(json!("complete")), // attach 已完成
+                navigate.clone(),
+                full.clone(), // 加购后的 SKU/数量核对
+                navigate.clone(),
+                sold_out, // 准备结账时库存已消失
+                navigate.clone(),
+                full,
+                cdp_page(json!(true)),    // 只读等待条目可删除
+                cdp_page(json!(removed)), // 清理前再次核对，移除只点一次
+            ];
+            if removed {
+                responses.extend([empty.clone(), navigate, empty, json!({"result": {}})]);
+            } else {
+                responses.push(json!({"result": {}})); // 清理失败也关闭本次窗口，下轮先继续清理
+            }
+            let responses = responses
+                .into_iter()
+                .flat_map(|response| {
+                    if response["result"]["frameId"].is_string() {
+                        vec![
+                            json!({"result": {"result": {"value": true}}}),
+                            response,
+                            cdp_page(json!(true)),
+                        ]
+                    } else {
+                        vec![response]
+                    }
+                })
+                .collect();
+            let (session, peer, requests) =
+                crate::chromium_fetcher::tests::checkout_session(responses).await;
+            let runner = CheckoutRunner {
+                session: Arc::new(Mutex::new(Some(session))),
+                ..Default::default()
+            };
+            let error = runner.run_on_hit(&plan, &|_| {}).await.unwrap_err();
+            assert_eq!(
+                error.stage,
+                if removed {
+                    Stage::Bag
+                } else {
+                    Stage::BagCleanup
+                }
+            );
+            assert!(error.can_retry());
+            assert!(peer.await.unwrap());
+            assert_eq!(runner.cleanup_pending.load(Ordering::Acquire), !removed);
+            let requests = requests.lock().await;
+            assert_eq!(
+                requests
+                    .iter()
+                    .filter(|r| r["method"] == "Browser.close")
+                    .count(),
+                1
+            );
+            assert!(requests.iter().any(|r| {
+                r["method"] == "Page.navigate"
+                    && r["params"]["url"]
+                        .as_str()
+                        .is_some_and(|url| url.contains("MK2Q4CH/A"))
+            }));
+            assert_eq!(
+                requests
+                    .iter()
+                    .filter(|r| r["method"] == "Input.dispatchMouseEvent")
+                    .count(),
+                2,
+                "加购只按下、释放各一次"
+            );
+            let remove = requests
+                .iter()
+                .filter_map(|r| r["params"]["expression"].as_str())
+                .find(|script| script.contains("matches.length !== 1"))
+                .unwrap();
+            assert!(remove.contains("owned-item.delete"));
+            assert!(remove.contains("MK2Q4CH/A"));
+            if removed {
+                assert_eq!(
+                    requests[requests.len() - 2]["method"],
+                    "Runtime.evaluate",
+                    "关闭前已重新打开购物袋核实空袋"
+                );
+                assert_eq!(requests.last().unwrap()["method"], "Browser.close");
+            }
+            runner.shutdown().await;
+        }
+    }
+
+    #[test]
+    fn 多型号同时到货不会排队启动第二次结账() {
+        let runner = CheckoutRunner::new();
+        let reservation = runner.try_reserve().unwrap();
+        assert!(runner.is_busy());
+        assert!(runner.try_reserve().is_none());
+        drop(reservation);
+        assert!(!runner.is_busy());
+        assert!(runner.try_reserve().is_some());
+    }
+
+    fn bag_snapshot(items: Vec<serde_json::Value>) -> serde_json::Value {
+        cdp_page(
+            json!({"bagEmpty": items.is_empty(), "canCheckout": !items.is_empty(),
+            "items": items, "total": "", "canPlaceOrder": false, "bagReady": true, "errors": []}),
+        )
+    }
+
+    fn bag_target(plan: &CheckoutPlan) -> serde_json::Value {
+        json!({"name": plan.product_name, "quantity": "1", "partNumber": plan.part_number,
+            "removeId": "target.delete"})
+    }
+
+    fn bag_navigation() -> serde_json::Value {
+        json!({"result": {"frameId": "page"}})
+    }
+
+    fn with_navigation_checks(responses: Vec<serde_json::Value>) -> Vec<serde_json::Value> {
+        responses
+            .into_iter()
+            .flat_map(|response| {
+                if response["result"]["frameId"].is_string() {
+                    vec![
+                        json!({"result": {"result": {"value": true}}}),
+                        response,
+                        cdp_page(json!(true)),
+                    ]
+                } else {
+                    vec![response]
+                }
+            })
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn 清理失败保留待清理状态下次先清空再按新型号加购() {
+        let mut plan = test_plan(true);
+        plan.auto_add_to_bag = true;
+        let old = json!({"name": "上次失败的旧型号", "quantity": "2", "partNumber": "OLDCH/A", "removeId": "old.delete"});
+        let runner = CheckoutRunner::new();
+        let (session, peer, first_requests) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                bag_navigation(),
+                bag_snapshot(vec![old.clone()]), // 本次检查发现残留而结束结账
+                bag_navigation(),
+                bag_snapshot(vec![old.clone()]),
+                cdp_page(json!(true)),
+                cdp_page(json!(false)),
+                json!({"result": {}}),
+            ]))
+            .await;
+        *runner.session.lock().await = Some(session);
+        let error = runner.run_on_hit(&plan, &|_| {}).await.unwrap_err();
+        assert_eq!(error.stage, Stage::BagCleanup);
+        assert!(error.can_retry());
+        assert!(runner.cleanup_pending.load(Ordering::Acquire));
+        assert!(peer.await.unwrap());
+        assert!(
+            !first_requests
+                .lock()
+                .await
+                .iter()
+                .any(|r| r["method"] == "Input.dispatchMouseEvent")
+        );
+
+        plan.part_number = "MK2U4CH/A".into();
+        plan.product_name = "iPhone Duo 1TB 夜空色".into();
+        plan.product_url = Some("https://www.apple.com.cn/shop/product/MK2U4CH/A".into());
+        let full = bag_snapshot(vec![bag_target(&plan)]);
+        let sold_out = cdp_page(json!({
+            "items": [bag_target(&plan)], "canCheckout": true, "bagReady": true,
+            "errors": ["商品已售罄"],
+        }));
+        let mut removing = old.clone();
+        removing["removeId"] = json!("");
+        let (session, peer, requests) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                bag_navigation(),
+                bag_snapshot(vec![old]), // 上次未清完，先处理
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![removing]),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]), // 新尝试从空袋开始
+                bag_navigation(),
+                cdp_page(json!({"ready": true, "error": ""})),
+                cdp_page(json!({"ready": true, "point": {"x": 10, "y": 20}, "error": ""})),
+                json!({"result": {}}),
+                json!({"result": {}}),
+                cdp_page(json!("complete")),
+                bag_navigation(),
+                full.clone(),
+                bag_navigation(),
+                sold_out,
+                bag_navigation(),
+                full,
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]),
+                json!({"result": {}}),
+            ]))
+            .await;
+        *runner.session.lock().await = Some(session);
+        let error = runner.run_on_hit(&plan, &|_| {}).await.unwrap_err();
+        assert_eq!(error.stage, Stage::Bag);
+        assert!(!runner.cleanup_pending.load(Ordering::Acquire));
+        assert!(peer.await.unwrap());
+        let requests = requests.lock().await;
+        let first_remove = requests
+            .iter()
+            .position(|r| {
+                r["params"]["expression"]
+                    .as_str()
+                    .is_some_and(|s| s.contains("old.delete") && s.ends_with("\"remove\"))"))
+            })
+            .unwrap();
+        let product = requests
+            .iter()
+            .position(|r| {
+                r["method"] == "Page.navigate"
+                    && r["params"]["url"] == plan.product_url.as_deref().unwrap()
+            })
+            .unwrap();
+        assert!(first_remove < product);
+        assert_eq!(
+            requests
+                .iter()
+                .filter(|r| r["method"] == "Input.dispatchMouseEvent")
+                .count(),
+            2
+        );
+        assert!(!requests.iter().any(|r| {
+            r["params"]["url"]
+                .as_str()
+                .is_some_and(|s| s.contains("MK2Q4CH"))
+        }));
+    }
+
+    #[tokio::test]
+    async fn 登录验证等待期间不重复输密码完成后自动恢复清理() {
+        let runner = CheckoutRunner::new();
+        runner.login_blocked.store(true, Ordering::Release);
+        runner.cleanup_pending.store(true, Ordering::Release);
+        let mut plan = test_plan(false);
+        plan.auto_add_to_bag = true;
+        plan.product_url = None; // 恢复验证后结束于准备阶段，不发起实际加购
+        let (session, peer, requests) = crate::chromium_fetcher::tests::checkout_session(vec![
+            json!({"result": {"result": {"value": 1}}}),
+            json!({"result": {}}),
+            cdp_page(json!({"step": "SignIn", "signIn": true})),
+        ])
+        .await;
+        *runner.session.lock().await = Some(session);
+        assert_eq!(
+            runner.run_on_hit(&plan, &|_| {}).await.unwrap_err().stage,
+            Stage::SignIn
+        );
+        assert!(!peer.await.unwrap(), "保留验证页");
+        assert_eq!(
+            requests.lock().await.len(),
+            3,
+            "不再提交密码或导航离开验证页"
+        );
+        assert!(runner.login_blocked.load(Ordering::Acquire));
+        runner.shutdown().await;
+
+        let (session, peer, requests) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                json!({"result": {"result": {"value": 1}}}),
+                json!({"result": {}}),
+                cdp_page(json!({"step": "Fulfillment", "signIn": false})),
+                bag_navigation(),
+                bag_snapshot(vec![]), // 恢复后先完成待清理
+                bag_navigation(),
+                bag_snapshot(vec![]), // 准备失败收尾仍确认空袋
+                json!({"result": {}}),
+            ]))
+            .await;
+        *runner.session.lock().await = Some(session);
+        assert_eq!(
+            runner.run_on_hit(&plan, &|_| {}).await.unwrap_err().stage,
+            Stage::Bag
+        );
+        assert!(peer.await.unwrap());
+        assert!(!runner.login_blocked.load(Ordering::Acquire));
+        assert!(!runner.cleanup_pending.load(Ordering::Acquire));
+        assert!(
+            !requests
+                .lock()
+                .await
+                .iter()
+                .any(|r| r["method"] == "Runtime.callFunctionOn")
+        );
+    }
+
+    #[tokio::test]
+    async fn 登录页面临时读取失败可以重试() {
+        let (mut session, peer, _) = crate::chromium_fetcher::tests::checkout_session(vec![
+            json!({"error": {"message": "context temporarily unavailable"}}),
+        ])
+        .await;
+        let plan = test_plan(false);
+        let error = Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &|_| {},
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: false,
+        }
+        .login_context()
+        .await
+        .unwrap_err();
+        assert_eq!(error.stage, Stage::SignInLoading);
+        assert!(error.can_retry());
+        drop(session);
+        assert!(peer.await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn 打开浏览器不会冲掉正在等待的登录验证页() {
+        let (session, peer, requests) = crate::chromium_fetcher::tests::checkout_session(vec![
+            json!({"result": {"result": {"value": 1}}}),
+            json!({"result": {}}),
+        ])
+        .await;
+        let runner = CheckoutRunner {
+            session: Arc::new(Mutex::new(Some(session))),
+            ..Default::default()
+        };
+        runner.login_blocked.store(true, Ordering::Release);
+        runner.open().await.unwrap();
+        assert!(!peer.await.unwrap());
+        let requests = requests.lock().await;
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1]["method"], "Page.bringToFront");
+        runner.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn 失败购物袋清理多个条目并刷新确认不会沿用残留() {
+        let mut plan = test_plan(false);
+        plan.auto_add_to_bag = true;
+        let target = bag_target(&plan);
+        let other = json!({"name": "其他残留商品", "quantity": "2", "partNumber": "OTHERCH/A", "removeId": "other.delete"});
+        let mut remaining = other.clone();
+        remaining["removeId"] = json!("target.delete"); // 重绘可能复用旧索引 ID，仍按新快照清理
+        let (mut session, peer, _) =
+            crate::chromium_fetcher::tests::checkout_session(with_navigation_checks(vec![
+                bag_navigation(),
+                bag_snapshot(vec![target, other.clone()]),
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![remaining]),
+                cdp_page(json!(true)),
+                cdp_page(json!(true)),
+                bag_snapshot(vec![]),
+                bag_navigation(),
+                bag_snapshot(vec![]),
+            ]))
+            .await;
+        Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &|_| {},
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: true,
+        }
+        .cleanup_bag()
+        .await
+        .unwrap();
+        drop(session);
+        assert!(peer.await.unwrap());
+    }
+
+    /// 使用临时、未登录的购物袋，不点击结账，也不接触用户的购物袋和付款信息。
+    #[tokio::test]
+    #[ignore = "访问 Apple，独立 Pro 购物袋两轮加购与失败清空，不结账"]
+    async fn 真实失败购物袋清空后可重新加购() {
+        let profile = tempfile::tempdir().unwrap();
+        let mut session = ChromiumSession::start_visible(profile.path().to_path_buf())
+            .await
+            .unwrap();
+        let mut plan = test_plan(false);
+        plan.auto_add_to_bag = true;
+        plan.part_number = "MJTA4CH/A".into();
+        plan.product_name = "iPhone 18 Pro 256GB 冰川蓝色".into();
+        plan.product_url = Some("https://www.apple.com.cn/shop/product/MJTA4CH/A".into());
+        let progress = |message: String| eprintln!("{message}");
+        let mut results = Vec::new();
+        let mut failure = None;
+        let mut flow = Flow {
+            session: &mut session,
+            plan: &plan,
+            progress: &progress,
+            store_number: plan.store_number.clone(),
+            store_title: plan.store_title.clone(),
+            owns_bag: false,
+        };
+        for round in 1..=2 {
+            let start = Instant::now();
+            let result = flow.prepare_bag().await;
+            let add_ms = start.elapsed().as_millis();
+            let start = Instant::now();
+            let cleanup = flow.cleanup_bag().await;
+            results.push(json!({"round": round, "addMs": add_ms, "clearAndVerifyMs": start.elapsed().as_millis(),
+                "added": result.is_ok(), "emptyVerified": cleanup.is_ok()}));
+            if let Err(error) = result.and(cleanup) {
+                failure = Some(error);
+                break;
+            }
+        }
+        eprintln!(
+            "REAL_CONTINUOUS_BAG {}",
+            json!({"sku": plan.part_number, "isolatedProfile": true,
+            "checkoutAttempted": false, "results": results, "error": failure.as_ref().map(ToString::to_string)})
+        );
+        session.close().await;
+        if let Some(error) = failure {
+            panic!("真实空袋重试验证失败：{error}");
+        }
+    }
+
+    /// 使用临时、未登录的购物袋，不点击结账，也不接触用户的购物袋和付款信息。
+    #[tokio::test]
+    #[ignore = "访问 Apple 并真实加购后移除临时购物袋中的商品，不结账"]
+    async fn 真实自动加购能核对型号并移除至空袋() {
+        let profile = tempfile::tempdir().unwrap();
+        for (part, name) in [
+            ("MK2Q4CH/A", "iPhone Duo 512GB 夜空色"),
+            ("MK2U4CH/A", "iPhone Duo 1TB 夜空色"),
+        ] {
+            let mut session = ChromiumSession::start_visible(profile.path().to_path_buf())
+                .await
+                .unwrap();
+            let mut plan = test_plan(false);
+            plan.auto_add_to_bag = true;
+            plan.part_number = part.into();
+            plan.product_name = name.into();
+            plan.product_url = Some(format!("https://www.apple.com.cn/shop/product/{part}"));
+            let progress = |message: String| eprintln!("{message}");
+            let mut flow = Flow {
+                session: &mut session,
+                plan: &plan,
+                progress: &progress,
+                store_number: plan.store_number.clone(),
+                store_title: plan.store_title.clone(),
+                owns_bag: false,
+            };
+            let added = flow.prepare_bag().await;
+            if added.is_err() {
+                eprintln!("加购页诊断：{:?}", flow.session.evaluate(r#"JSON.stringify({path: location.pathname, product: new URLSearchParams(location.search).get('product'), summary: document.querySelector('[data-autom="summary-productName"]')?.innerText, title: document.title})"#, false).await);
+            }
+            let cleaned = if flow.owns_bag {
+                flow.cleanup_bag().await
+            } else {
+                Ok(())
+            };
+            session.close().await;
+            added.expect("真实加购失败");
+            cleaned.expect("真实清理失败");
+        }
+    }
 
     #[test]
     fn 结账地区按目标门店编号从目录读取() {
@@ -1324,6 +2654,8 @@ mod tests {
         LineItem {
             name: name.into(),
             quantity: quantity.into(),
+            part_number: String::new(),
+            remove_id: String::new(),
         }
     }
 
@@ -1378,6 +2710,9 @@ mod tests {
         let script = store_state_js("R1\"); alert(1); (\"");
         assert!(script.contains(r#"e.value === "R1\"); alert(1); (\"""#));
         let script = billing_choice_js(&CheckoutPlan {
+            auto_add_to_bag: false,
+            part_number: "MK2Q4CH/A".into(),
+            product_url: Some("https://www.apple.com.cn/shop/product/MK2Q4CH/A".into()),
             store_number: "R678".into(),
             store_title: "Apple 静安".into(),
             product_name: "x".into(),
@@ -1405,6 +2740,9 @@ mod tests {
         let env =
             |name: &str, default: &str| std::env::var(name).unwrap_or_else(|_| default.into());
         let plan = CheckoutPlan {
+            auto_add_to_bag: false,
+            part_number: "MK2Q4CH/A".into(),
+            product_url: Some("https://www.apple.com.cn/shop/product/MK2Q4CH/A".into()),
             store_number: env("APW_LIVE_STORE", "R678"),
             store_title: env("APW_LIVE_STORE_TITLE", "Apple 静安"),
             product_name: std::env::var("APW_LIVE_PRODUCT").expect("请设置 APW_LIVE_PRODUCT"),
@@ -1443,6 +2781,7 @@ mod tests {
             progress: &progress,
             store_number: plan.store_number.clone(),
             store_title: plan.store_title.clone(),
+            owns_bag: false,
         }
         .run()
         .await;
@@ -1472,6 +2811,9 @@ mod tests {
             .expect("购物袋页面导航失败");
         let progress = |_: String| {};
         let plan = CheckoutPlan {
+            auto_add_to_bag: false,
+            part_number: "MK2Q4CH/A".into(),
+            product_url: Some("https://www.apple.com.cn/shop/product/MK2Q4CH/A".into()),
             store_number: "R678".into(),
             store_title: "Apple 静安".into(),
             product_name: "x".into(),
@@ -1491,6 +2833,7 @@ mod tests {
             progress: &progress,
             store_number: plan.store_number.clone(),
             store_title: plan.store_title.clone(),
+            owns_bag: false,
         };
         let state: PageState = flow
             .wait(
