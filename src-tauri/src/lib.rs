@@ -1138,8 +1138,7 @@ async fn test_checkout(
 
 /// 到货后执行自动结账，并把结果通知用户。
 ///
-/// 无论停在「查看订单」页还是已提交订单，成功一次后都会关闭自动结账：再次到货
-/// 时重跑流程会打断用户正在看的页面，已下单时还会重复下单。
+/// 成功后是否关闭总开关由用户选择；提交结果不明时仍强制停止自动结账。
 async fn run_checkout_on_hit(app: AppHandle, target: Target) {
     let Some(state) = app.try_state::<AppState>() else {
         return;
@@ -1200,14 +1199,21 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
     let (title, body) = match result {
         Ok(outcome) => {
             let mut next = state.settings_snapshot();
-            next.checkout.enabled = false;
-            match state.put_settings(next.clone()) {
-                Ok(()) => {
-                    let _ = app.emit(SETTINGS_CHANNEL, &next);
+            if should_disable_checkout_after_success(&next, &outcome) {
+                next.checkout.enabled = false;
+                match state.put_settings(next.clone()) {
+                    Ok(()) => {
+                        let _ = app.emit(SETTINGS_CHANNEL, &next);
+                    }
+                    Err(err) => {
+                        let _ = app.emit(NOTICE_CHANNEL, format!("关闭自动结账开关失败：{err}"));
+                    }
                 }
-                Err(err) => {
-                    let _ = app.emit(NOTICE_CHANNEL, format!("关闭自动结账开关失败：{err}"));
-                }
+            } else if next.checkout.enabled {
+                let _ = app.emit(
+                    NOTICE_CHANNEL,
+                    "自动结账：按设置保持开启，监控继续运行时后续有货会再次结账。",
+                );
             }
             match outcome {
                 CheckoutOutcome::ReachedReview { store, total } => (
@@ -1235,7 +1241,7 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
                 } => (
                     "已点立即下单，请确认结果",
                     format!(
-                        "{store} {}，总计 {total}。页面上没有读到订单号，请在下单浏览器里确认订单是否成立。",
+                        "{store} {}，总计 {total}。页面上没有读到订单号，已关闭自动结账，请在下单浏览器里确认订单是否成立。",
                         target.product_name
                     ),
                 ),
@@ -1294,6 +1300,17 @@ async fn run_checkout_on_hit(app: AppHandle, target: Target) {
     if let Err(err) = dispatch_notification(&app, Notification::new(title, body), &bark_url).await {
         let _ = app.emit(NOTICE_CHANNEL, format!("发送结账提醒时出错：{err}"));
     }
+}
+
+fn should_disable_checkout_after_success(settings: &Settings, outcome: &CheckoutOutcome) -> bool {
+    settings.checkout.disable_after_success
+        || matches!(
+            outcome,
+            CheckoutOutcome::OrderSubmitted {
+                order_number: None,
+                ..
+            }
+        )
 }
 
 /// 自动结账开启时，要等流程完成或需要人工确认才暂停，失败不能截断后续重试。
@@ -1741,11 +1758,42 @@ async fn release_browsers(app: &AppHandle) {
 mod tests {
     use super::{
         in_stock_notification_body, parse_delivery_localities, parse_watch_band_choices,
-        parse_watch_band_sizes, should_pause_monitoring,
+        parse_watch_band_sizes, should_disable_checkout_after_success, should_pause_monitoring,
     };
     use crate::checkout::{CheckoutError, CheckoutOutcome, Stage};
     use apw_core::config::Settings;
     use apw_core::model::Target;
+
+    #[test]
+    fn 成功后是否关闭由用户选择但提交结果不明必须关闭() {
+        let mut settings = Settings::default();
+        let review = CheckoutOutcome::ReachedReview {
+            store: "test".into(),
+            total: "100".into(),
+        };
+        let submitted = CheckoutOutcome::OrderSubmitted {
+            store: "test".into(),
+            total: "100".into(),
+            order_number: Some("W12345678".into()),
+        };
+        let uncertain = CheckoutOutcome::OrderSubmitted {
+            store: "test".into(),
+            total: "100".into(),
+            order_number: None,
+        };
+        for disable in [true, false] {
+            settings.checkout.disable_after_success = disable;
+            assert_eq!(
+                should_disable_checkout_after_success(&settings, &review),
+                disable
+            );
+            assert_eq!(
+                should_disable_checkout_after_success(&settings, &submitted),
+                disable
+            );
+            assert!(should_disable_checkout_after_success(&settings, &uncertain));
+        }
+    }
 
     #[test]
     fn 到货后暂停监控不会截断自动结账失败重试() {

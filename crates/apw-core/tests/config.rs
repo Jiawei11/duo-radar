@@ -113,6 +113,7 @@ fn 样例设置() -> Settings {
         },
         checkout: CheckoutSettings {
             enabled: true,
+            disable_after_success: false,
             auto_add_to_bag: false,
             national_id_suffix: "123X".into(),
             payment: CheckoutPayment::Installment,
@@ -738,6 +739,7 @@ fn 自动结账默认关闭且不会自动提交订单() {
     huabei.normalize();
     assert_eq!(huabei.checkout.installment_periods, 12);
     assert!(!checkout.enabled);
+    assert!(checkout.disable_after_success);
     assert!(!checkout.place_order);
     assert!(!checkout.accept_nearest_store);
     assert!(!checkout.fill_contact);
@@ -768,6 +770,18 @@ fn 自动结账规范化只保留四位证件后缀并收敛期数() {
 fn 旧配置缺少自动结账字段时保持关闭() {
     let settings: Settings = serde_json::from_str(r#"{"locale":"zh_CN"}"#).expect("解析失败");
     assert_eq!(settings.checkout, CheckoutSettings::default());
+}
+
+#[test]
+fn 成功后关闭选项兼容旧配置且保留用户持续结账选择() {
+    let old: CheckoutSettings = serde_json::from_str(r#"{"enabled":true}"#).unwrap();
+    assert!(old.disable_after_success);
+    let mut settings = Settings::default();
+    settings.checkout.disable_after_success = false;
+    settings.normalize();
+    let loaded: Settings =
+        serde_json::from_value(serde_json::to_value(&settings).unwrap()).unwrap();
+    assert!(!loaded.checkout.disable_after_success);
 }
 
 #[test]

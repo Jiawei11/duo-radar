@@ -159,7 +159,20 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
           {checkout.autoAddToBag ? "按本次到货型号加购 1 件；结账失败会移除本次商品、确认空袋后关闭页面并继续监控。" : "购物袋里必须只有到货的那一件商品。"}
-          成功执行一次后自动关闭此开关，避免重复下单。
+        </p>
+        <div className="setting-row">
+          <Label htmlFor="checkout-disable-after-success" className="text-sm font-normal">成功后关闭自动结账</Label>
+          <Switch
+            id="checkout-disable-after-success"
+            checked={checkout.disableAfterSuccess}
+            onCheckedChange={(disableAfterSuccess) => save({ disableAfterSuccess })}
+          />
+        </div>
+        <p className="text-[11px] leading-4 break-words text-muted-foreground">
+          {checkout.disableAfterSuccess
+            ? "到达查看订单页或确认订单已提交后，关闭上方总开关。"
+            : "成功后保持总开关开启；监控继续运行时，持续有货会再次结账并切换当前页面，开启立即下单时可能生成多笔真实订单。"}
+          提交结果不明、购物袋无法安全清理或登录需人工处理时，仍会关闭自动结账并保留页面。
         </p>
         <div className="setting-row">
           <Label htmlFor="checkout-auto-add" className="text-sm font-normal">按到货型号自动加入购物袋</Label>

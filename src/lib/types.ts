@@ -151,6 +151,8 @@ export const INSTALLMENT_PERIODS = [1, 3, 6, 12, 24] as const;
 /** 到货后自动结账的设置。目前只支持中国大陆的直营店取货。 */
 export interface CheckoutSettings {
   enabled: boolean;
+  /** 成功后关闭自动结账；关闭此项允许后续到货继续触发。 */
+  disableAfterSuccess: boolean;
   /** 自动加入本次到货的型号，允许监控列表中的不同商品触发。 */
   autoAddToBag: boolean;
   /** 取货人证件号码后四位；Apple 每次结账都要求重新填写。 */

@@ -285,6 +285,8 @@ pub fn checkout_product_key(target: &Target) -> String {
 #[serde(rename_all = "camelCase", default)]
 pub struct CheckoutSettings {
     pub enabled: bool,
+    /// 成功后是否关闭自动结账。旧配置保持原来的单次行为。
+    pub disable_after_success: bool,
     /// 按本次到货的型号自动加购；开启后，所有中国大陆监控型号均可触发。
     /// 旧配置保持关闭，继续使用预先准备的购物袋和指定商品。
     pub auto_add_to_bag: bool,
@@ -316,6 +318,7 @@ impl Default for CheckoutSettings {
     fn default() -> Self {
         Self {
             enabled: false,
+            disable_after_success: true,
             auto_add_to_bag: false,
             national_id_suffix: String::new(),
             payment: CheckoutPayment::Alipay,
