@@ -180,7 +180,7 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
           {checkout.autoAddToBag
-            ? "监控列表中的中国大陆型号都可触发，同一时间只处理一件。专属购物袋请先留空；已有本次型号的 1 件商品时沿用，出现其他商品时停下，不会清除它们或一起购买。暂不支持需另选表带等组合配置。"
+            ? "监控列表中的中国大陆型号都可触发，同一时间只处理一件。会自动删除专属购物袋中的其他商品，只保留本次型号 1 件；没有时重新加购，数量不符时移除后加购 1 件。核对通过才结账，暂不支持需另选表带等组合配置。"
             : "关闭时使用事先准备的购物袋，只对下面选定的商品结账。"}
         </p>
         {!checkout.autoAddToBag ? <div className="field-group">
@@ -367,7 +367,7 @@ export function CheckoutSettings({ checkout, targets }: { checkout: Checkout; ta
         </div>
         <p className="text-[11px] leading-4 break-words text-muted-foreground">
           {checkout.autoAddToBag
-            ? "先在下单浏览器中登录并留空购物袋。试跑会加购监控列表中的第一件中国大陆商品，停在查看订单页，不会提交订单；试跑失败保留页面供检查。"
+            ? "先在下单浏览器中登录。试跑会整理购物袋，只保留或加购监控列表中的第一件中国大陆商品 1 件，停在查看订单页，不会提交订单；试跑失败保留页面供检查。"
             : "首次使用先打开下单浏览器，登录 Apple 账户、加入商品并手动走一次结账。试跑用「要下单的商品」和它第一条监控项的门店，不会提交订单。"}
         </p>
       </div>
