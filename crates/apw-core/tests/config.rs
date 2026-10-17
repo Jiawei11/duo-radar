@@ -113,6 +113,7 @@ fn 样例设置() -> Settings {
         },
         checkout: CheckoutSettings {
             enabled: true,
+            auto_add_to_bag: false,
             national_id_suffix: "123X".into(),
             payment: CheckoutPayment::Installment,
             installment_bank: "招商银行".into(),
@@ -795,6 +796,35 @@ fn 监控多件商品时只有选中的那件会触发结账() {
     assert!(settings.checkout.enabled);
     assert!(!settings.is_checkout_target(&settings.targets[0]));
     assert!(settings.is_checkout_target(&settings.targets[1]));
+}
+
+#[test]
+fn 自动加购允许不同型号到货且仍排除其他地区() {
+    let mut overseas = 目标("R409", "MG724ZP/A");
+    overseas.locale = "zh_HK".into();
+    let mut settings = Settings {
+        targets: vec![
+            目标("R683", "MG724CH/A"),
+            目标("R448", "MG0A4CH/A"),
+            overseas,
+        ],
+        ..Default::default()
+    };
+    settings.checkout.auto_add_to_bag = true;
+    settings.checkout.enabled = true;
+    // 即使保留了旧模式的单商品选择，也不能挡住新模式中的另一件商品。
+    settings.checkout.product = "MG724CH/A||".into();
+    settings.normalize();
+    assert!(settings.checkout.enabled);
+    assert!(settings.is_checkout_target(&settings.targets[0]));
+    assert!(settings.is_checkout_target(&settings.targets[1]));
+    assert!(!settings.is_checkout_target(&settings.targets[2]));
+    settings.targets.remove(0);
+    settings.normalize();
+    assert!(settings.checkout.enabled);
+    settings.targets.remove(0);
+    settings.normalize();
+    assert!(!settings.checkout.enabled);
 }
 
 #[test]

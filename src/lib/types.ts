@@ -151,6 +151,8 @@ export const INSTALLMENT_PERIODS = [1, 3, 6, 12, 24] as const;
 /** 到货后自动结账的设置。目前只支持中国大陆的直营店取货。 */
 export interface CheckoutSettings {
   enabled: boolean;
+  /** 自动加入本次到货的型号，允许监控列表中的不同商品触发。 */
+  autoAddToBag: boolean;
   /** 取货人证件号码后四位；Apple 每次结账都要求重新填写。 */
   nationalIdSuffix: string;
   payment: CheckoutPayment;
@@ -161,7 +163,7 @@ export interface CheckoutSettings {
   placeOrder: boolean;
   /** 结账页默认选中的最近有货门店可取货时直接用它，不换到监控到货的那一家。 */
   acceptNearestStore: boolean;
-  /** 要下单的商品标识（见 checkoutProductKey）。留空且只监控一件商品时自动认定为那一件。 */
+  /** 预先准备购物袋模式的商品标识；自动加购时忽略。 */
   product: string;
   /** 是否用下面的联系信息覆盖结账页上 Apple 预填的内容。 */
   fillContact: boolean;

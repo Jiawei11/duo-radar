@@ -481,6 +481,19 @@ impl ChromiumSession {
         Self::launch(profile_dir, &[], false).await
     }
 
+    /// 让专属浏览器正常退出以保存登录资料；连接失效时由进程守卫兜底回收。
+    pub(crate) async fn close(&mut self) {
+        let _ = tokio::time::timeout(
+            Duration::from_secs(2),
+            self.command("Browser.close", json!({})),
+        )
+        .await;
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while matches!(self._process.child.try_wait(), Ok(None)) && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+    }
+
     async fn launch(
         profile_dir: PathBuf,
         network_args: &[String],
@@ -2413,7 +2426,7 @@ impl Fetcher for AppleChromiumFetcher {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use apw_core::model::{Availability, UnknownReason, region_by_locale};
 
@@ -2506,6 +2519,68 @@ mod tests {
             peer,
             requests,
         )
+    }
+
+    pub(crate) async fn checkout_session(
+        responses: Vec<Value>,
+    ) -> (
+        ChromiumSession,
+        tokio::task::JoinHandle<bool>,
+        Arc<Mutex<Vec<Value>>>,
+    ) {
+        let (fetcher, peer, requests) = cdp_recorded_responses(responses).await;
+        let session = fetcher.state.lock().await.session.take().unwrap();
+        (session, peer, requests)
+    }
+
+    #[tokio::test]
+    #[ignore = "需要本机 Chrome 或 Edge；使用临时资料，不访问 Apple"]
+    async fn 专属浏览器关闭后能保留资料并重新打开空白页() {
+        let profile = tempfile::tempdir().unwrap();
+        let mut session = ChromiumSession::start(profile.path().to_path_buf())
+            .await
+            .unwrap();
+        session
+            .command(
+                "Network.setCookie",
+                json!({
+                    "url": "https://checkout.invalid/",
+                    "name": "checkout_lifecycle_test",
+                    "value": "preserved",
+                    "expires": 4102444800_f64,
+                }),
+            )
+            .await
+            .unwrap();
+        session
+            .command(
+                "Page.navigate",
+                json!({"url": "data:text/html,failed-checkout"}),
+            )
+            .await
+            .unwrap();
+        session.close().await;
+        assert!(session._process.child.try_wait().unwrap().is_some());
+        drop(session);
+
+        let mut next = ChromiumSession::start(profile.path().to_path_buf())
+            .await
+            .unwrap();
+        assert_eq!(
+            next.evaluate("location.href", false).await.unwrap(),
+            "about:blank"
+        );
+        let cookies = next
+            .command(
+                "Network.getCookies",
+                json!({"urls": ["https://checkout.invalid/"]}),
+            )
+            .await
+            .unwrap();
+        assert!(cookies["cookies"].as_array().unwrap().iter().any(|cookie| {
+            cookie["name"] == "checkout_lifecycle_test" && cookie["value"] == "preserved"
+        }));
+        next.close().await;
     }
 
     fn nearby_target(store: &str, part: &str) -> Target {

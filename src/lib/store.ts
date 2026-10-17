@@ -104,6 +104,7 @@ const DEFAULT_SETTINGS: Settings = {
   },
   checkout: {
     enabled: false,
+    autoAddToBag: false,
     nationalIdSuffix: "",
     payment: "alipay",
     installmentBank: "招商银行",

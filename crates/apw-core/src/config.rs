@@ -285,6 +285,9 @@ pub fn checkout_product_key(target: &Target) -> String {
 #[serde(rename_all = "camelCase", default)]
 pub struct CheckoutSettings {
     pub enabled: bool,
+    /// 按本次到货的型号自动加购；开启后，所有中国大陆监控型号均可触发。
+    /// 旧配置保持关闭，继续使用预先准备的购物袋和指定商品。
+    pub auto_add_to_bag: bool,
     /// 取货人证件号码后四位。Apple 每次结账都要求重新填写，不会预填。
     pub national_id_suffix: String,
     pub payment: CheckoutPayment,
@@ -296,8 +299,8 @@ pub struct CheckoutSettings {
     /// 结账页默认选中的门店（离取货地区最近的有货门店）可取货时，直接在那里取货，
     /// 即使它不是监控到货的那一家。换门店要多等 Apple 一轮加载，约十几秒。
     pub accept_nearest_store: bool,
-    /// 要下单的商品（[`checkout_product_key`]）。只有它到货才会触发结账，购物袋里
-    /// 放的也必须是它。留空且监控列表里只有一件商品时，自动认定为那一件。
+    /// 预先准备购物袋模式的指定商品（[`checkout_product_key`]）。自动加购时忽略，
+    /// 否则只有它到货才触发。留空且只有一种商品时自动认定为那一件。
     pub product: String,
     /// 是否用下面这组联系信息覆盖结账页上 Apple 预填的内容。关闭时只核对预填内容。
     pub fill_contact: bool,
@@ -313,6 +316,7 @@ impl Default for CheckoutSettings {
     fn default() -> Self {
         Self {
             enabled: false,
+            auto_add_to_bag: false,
             national_id_suffix: String::new(),
             payment: CheckoutPayment::Alipay,
             installment_bank: "招商银行".into(),
@@ -494,16 +498,20 @@ impl Settings {
 
         self.network.normalize();
         self.checkout.normalize();
-        // 选中的商品不在监控列表里了就清掉；没有明确的下单商品时自动结账不能开着，
-        // 否则会变成「哪件先到货就拿哪件去撞购物袋」。
-        if !self.checkout.product.is_empty()
+        // 旧模式仍要求明确的单商品；自动加购模式由每次到货的目标决定商品。
+        if !self.checkout.auto_add_to_bag
+            && !self.checkout.product.is_empty()
             && !self.checkout_candidates().contains(&self.checkout.product)
         {
             self.checkout.product.clear();
             // 选定的商品没了就整体停用，不让剩下的某一件悄悄顶替它继续自动下单。
             self.checkout.enabled = false;
         }
-        if self.checkout_product().is_none() {
+        if !self
+            .targets
+            .iter()
+            .any(|target| self.is_checkout_target(target))
+        {
             self.checkout.enabled = false;
         }
     }
@@ -538,7 +546,9 @@ impl Settings {
     /// 这条监控项到货时是否应当触发自动结账。
     pub fn is_checkout_target(&self, target: &Target) -> bool {
         target.locale == CHECKOUT_LOCALE
-            && self.checkout_product().as_deref() == Some(checkout_product_key(target).as_str())
+            && (self.checkout.auto_add_to_bag
+                || self.checkout_product().as_deref()
+                    == Some(checkout_product_key(target).as_str()))
     }
 
     /// 查询间隔。
