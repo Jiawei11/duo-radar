@@ -721,7 +721,7 @@ impl Flow<'_> {
                         .into(),
                 )
             })?;
-        self.report("自动结账：Apple 要求重新登录，正在使用本机钥匙串登录");
+        self.report("自动结账：Apple 要求重新登录，正在使用软件配置中的账户登录");
         let deadline = Instant::now() + Duration::from_secs(90);
         let mut account_sent = false;
         let mut password_sent = false;
@@ -754,7 +754,7 @@ impl Flow<'_> {
                     }
                     "accountMismatch" => {
                         return Err(fail(
-                            "登录页账户与钥匙串账户不一致，未填写密码，请手动确认".into(),
+                            "登录页账户与配置账户不一致，未填写密码，请手动确认".into(),
                         ));
                     }
                     "untrusted" => return Err(fail("登录页面来源不符合预期，未填写密码".into())),

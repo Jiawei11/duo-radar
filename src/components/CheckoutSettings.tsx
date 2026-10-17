@@ -74,14 +74,13 @@ function monitoredProducts(targets: Target[]): { key: string; name: string }[] {
 }
 
 function CheckoutLogin() {
-  const [status, setStatus] = useState({ supported: false, saved: false });
+  const [status, setStatus] = useState({ saved: false });
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const refresh = () => invoke<typeof status>("checkout_login_status").then(setStatus);
-  useEffect(() => { void refresh().catch(() => setMessage("无法读取钥匙串状态")); }, []);
-  if (!status.supported) return message ? <p role="status">{message}</p> : null;
+  useEffect(() => { void refresh().catch(() => setMessage("无法读取自动登录配置")); }, []);
   const save = async () => {
     setBusy(true);
     try {
@@ -89,14 +88,14 @@ function CheckoutLogin() {
       setPassword("");
       setAccount("");
       await refresh();
-      setMessage("已保存到本机钥匙串");
-    } catch { setMessage("未能保存，请检查输入或钥匙串权限"); }
+      setMessage("已保存到软件配置");
+    } catch { setMessage("未能保存，请检查输入或配置文件权限"); }
     finally { setBusy(false); }
   };
   const clear = async () => {
     setBusy(true);
     try { await invoke("clear_checkout_login"); await refresh(); setMessage("已移除自动登录信息"); }
-    catch { setMessage("未能移除，请检查钥匙串权限"); }
+    catch { setMessage("未能移除，请检查配置文件权限"); }
     finally { setBusy(false); }
   };
   return <div className="grid gap-2 rounded-xl border border-border/60 p-3">
@@ -104,12 +103,12 @@ function CheckoutLogin() {
     <Label htmlFor="checkout-login-account">Apple 账户</Label>
     <Input id="checkout-login-account" autoComplete="off" value={account} onChange={e => setAccount(e.target.value)} placeholder="电子邮件或电话号码" />
     <Label htmlFor="checkout-login-password">密码</Label>
-    <Input id="checkout-login-password" type="password" autoComplete="off" value={password} onChange={e => setPassword(e.target.value)} placeholder={status.saved ? "已保存；输入新密码可更新" : "保存到 macOS 钥匙串"} />
+    <Input id="checkout-login-password" type="password" autoComplete="off" value={password} onChange={e => setPassword(e.target.value)} placeholder={status.saved ? "已保存；输入新密码可更新" : "保存到软件配置"} />
     <div className="flex gap-2">
       <Button variant="outline" disabled={busy || !account.trim() || !password} onClick={() => void save()}>保存登录信息</Button>
       {status.saved ? <Button variant="outline" disabled={busy} onClick={() => void clear()}>移除</Button> : null}
     </div>
-    <p className="text-[11px] leading-4 text-muted-foreground">结账要求登录时自动填写并继续。同一次流程只提交一次密码；验证码或二次验证需你处理。密码只保存在本机钥匙串。</p>
+    <p className="text-[11px] leading-4 text-muted-foreground">结账要求登录时自动填写并继续。同一次流程只提交一次密码；验证码或二次验证需你处理。账号密码以明文保存在本机 checkout-login.json，仅限当前系统用户访问。请勿分享该配置文件。</p>
     {message ? <p className="text-xs" role="status">{message}</p> : null}
   </div>;
 }
