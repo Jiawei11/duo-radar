@@ -5,3 +5,5 @@
 .duo-store-location{display:flex;flex-direction:column;gap:3px;margin-top:6px;color:var(--muted-foreground);font-size:11px;user-select:text}.duo-store-location span{user-select:text}
 
 .duo-cart-button{padding:6px 12px;border:1px solid var(--primary);border-radius:7px;color:var(--primary);white-space:nowrap}.duo-cart-button:disabled{opacity:.5}.duo-cart-result{font-size:11px;line-height:1.6;min-width:135px;max-width:210px;margin:6px 0;color:var(--muted-foreground)}
+
+.duo-language{background:var(--card);color:var(--foreground);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:12px}.duo-language:focus-visible{outline:2px solid var(--primary)}.duo-setting{gap:14px}.duo-setting input[type=checkbox]{flex-shrink:0}

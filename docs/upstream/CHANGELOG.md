@@ -1,3 +1,108 @@
+# Historical upstream changelog — English / 上游历史更新英文说明
+
+This archive records upstream behavior, including features not exposed in current Duo Radar. The original Chinese changelog is preserved below.
+此处记录上游历史行为，包含本版没有开放的功能；原中文更新记录保留在下方。
+
+## Unreleased
+
+Pre-submit cart cleanup/retry; configurable checkout disablement after success; optional local credential login; per-arrival SKU add; a single concurrent reservation; distinct pre-submit failure vs uncertain-order handling; monitoring-pause timing fixes.
+
+## 1.0.22
+
+Initialize the mainland-China pickup province/city/district when missing, reuse valid existing stores, preserve address metadata and test asynchronous/municipality/default-store cases.
+
+## 1.0.21
+
+Single-instance activation, Windows-owned browser process trees, safe orphan-profile recovery, actionable startup errors, deduplicated failure logs and local startup diagnostics.
+
+## 1.0.20
+
+Optional mainland-China checkout with exact single-SKU/quantity validation, contact/payment/pickup preferences, one checkout at a time, a dry run, optional single order submission, stock-triggered pause and correct browser cleanup on exit.
+
+## 1.0.19
+
+Refresh stores from retail/storelist, reject anomalous shrinkage, persist catalog caches, refresh stores plus the selected category, route refreshes via the selected network with fallback, and improve Clash setup instructions/controller address parsing.
+
+## 1.0.18
+
+System/pinned/rotating Clash routing; dedicated port/group; node cooldown and latency checks; DIRECT support; headless browser identity matching; route logs and collapsible settings.
+
+## 1.0.17
+
+Merge same-city queries within the 20-part limit, correct China delivery address parameters, share delivery caches with separate positive/empty lifetimes, preserve previous dates on refresh failures and clarify address messages.
+
+## 1.0.16
+
+Persistent isolated Chromium profiles and safe owned-process cleanup; version-specific refusal retry policy; retain sessions after page-fetch failures; separate delivery failures from pickup; city/store fallbacks and layout/countdown improvements.
+
+## 1.0.15
+
+Warm overseas sessions from the region homepage, distinguish stores not offering online pickup, and keep mainland-China delivery location selection independent of the viewed region.
+
+## 1.0.14
+
+Adopt the current pickup API, reuse city responses, correct delivery location queries and prevent delivery failures from replacing confirmed pickup results.
+
+## 1.0.13
+
+Region-specific education-bag destinations and complete scrollable tables with accessible row deletion in narrow windows.
+
+## 1.0.12
+
+Stop monitoring before shutdown and clean up full browser process trees, including startup/CDP failures.
+
+## 1.0.11
+
+Serialize rapid removals using the latest target list, persist before updating UI/engine and show deletion errors without restoring stale rows.
+
+## 1.0.10
+
+Valid ASCII Linux package/assets; real installation checks; split requests over 20 parts including Watch bands; isolate China delivery settings; tighten Unix permissions and redact Bark errors; pending pickup states, layout and manual retry fixes.
+
+## 1.0.9
+
+Use the configured normal-cycle interval after successful queries while retaining the actual-request minimum gap and protection cooldown.
+
+## 1.0.8
+
+Guodao Radar branding/icons; reuse nearby-store responses; cancellation-safe request budgeting; progressive refusal cooldown and recovery probes.
+
+## 1.0.7
+
+Add Beijing Livat R792, restoring the sixth Beijing store.
+
+## 1.0.6
+
+Delivery date/range presentation without fabricated dates; live China address options; Watch case/band/size SKU combinations; structured Watch names; pickup dates; responsive layout, fixed deletion column, title version and expanded regressions.
+
+## 1.0.5
+
+Open-source/download/author links with hover, keyboard and accessibility support.
+
+## 1.0.4
+
+Avoid hanging Windows browser-version probes; bound Chromium target, WebSocket and command waits, reporting unknown states and retrying rather than waiting forever.
+
+## 1.0.3
+
+Per-product Bark destinations and complete macOS ad-hoc app/DMG signature verification.
+
+## 1.0.2
+
+Optional no-open/bag/product destinations, consistent Bark links, clickable product names, alert/navigation tests, legacy-setting compatibility and appropriate Watch configuration URLs without automatic purchasing.
+
+## 1.0.1
+
+Discover current products per region; remove withdrawn pages only after complete refresh; improve Watch/Mac/iPad specifications; prioritize new iPhones; distinguish business states; retain evidence; show update progress/signature errors; consolidate notifications and tests.
+
+## 1.0.0
+
+First official release: multiple stores/products, Chromium queries, cycle logs, sound/Bark and optional bag opening.
+
+---
+
+# Original Chinese changelog / 原中文更新记录
+
 # 更新记录
 
 ## 未发布

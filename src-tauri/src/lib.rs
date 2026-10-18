@@ -1307,8 +1307,8 @@ async fn pump_events(app: AppHandle, mut events: tokio::sync::mpsc::Receiver<Eve
 /// 关窗口时不退出而是收进托盘：这个工具的正常用法就是挂上几个小时等发售，
 /// 让它一直占着一个窗口和 Dock 图标没有道理。
 fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, "show", "显示窗口", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+    let show = MenuItem::with_id(app, "show", "Show window / 显示窗口", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit / 退出", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &quit])?;
 
     TrayIconBuilder::with_id("main")

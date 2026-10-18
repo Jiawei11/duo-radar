@@ -1,3 +1,22 @@
+# Historical US prototype — English / 早期美国版英文说明
+
+**Archive only. Use [the current README](../../README.md) for Duo Radar 1.4.0.** This prototype was based on suversal/apple-store-inventory-monitor 363601e under GPL-3.0-or-later. It is not affiliated with Apple. Original Chinese text is preserved below.
+
+1. Run the Windows x64 installer or portable EXE, with Chrome or Edge installed.
+2. The prototype defaulted to en_US, with Dallas/Austin/Houston shortcuts or city/store-name search. Select product variants and add monitors.
+3. It offered sound or Bark and queried again 30 seconds after a cycle. Unknown, blocked and failed requests did not mean out of stock.
+4. That historical US build only monitored and alerted. Mainland-China checkout and delivery settings were not adapted to the US.
+
+Texas shortcuts covered NorthPark Center R144, Knox Street R042, Galleria Dallas R746, Southlake Town Square R151, University Park Village R316, Domain NORTHSIDE R216, Barton Creek R085, Houston Galleria R058, Memorial City R164, Willowbrook Mall R321, Highland Village R437, Baybrook R204, First Colony Mall R205 and The Woodlands R126. The full US catalog was bundled and US queries preferred store ZIPs.
+
+The prototype catalog included iPhone families and basic iPad, Mac mini and Apple Watch entries, with manual refresh. Its independent data directory was %APPDATA%\apple-store-inventory-monitor-us\; it did not import or automatically update from upstream, or read everyday browser profiles. Current Duo Radar uses %APPDATA%\duo-radar\ instead.
+
+Development required Node.js, pnpm, Rust MSVC, Visual Studio C++ Build Tools and Windows SDK. Commands: pnpm install; pnpm tauri dev; cargo test --workspace --lib --tests; pnpm test; pnpm build; pnpm tauri build --bundles nsis. The opt-in live_us_texas_three_cities_two_rounds test queried only, without purchasing. Outputs were in target/release/ and target/release/bundle/nsis/.
+
+Historical evidence in research/texas-live-results.json and pickup-*.json captured public responses for iPhone 17 256GB Mist Blue (MG484LL/A): one store each in Dallas, Austin and Houston, two rounds in the same browser, all six returning confirmed pickup availability with “Tomorrow” at that time. This does not establish current stock. Historical frontend and Rust regression checks passed. Changes added US catalogs/ZIP metadata, independent app identity, US store refresh, education-bag URL fixes and US regression tests.
+
+## Original Chinese / 原中文说明
+
 # 果到雷达 US — Windows 美国门店取货监控
 
 基于 suversal/apple-store-inventory-monitor 提交 `363601e` 的本地修改版，遵循 GPL-3.0-or-later。原始作者、来源与许可见 NOTICE、LICENSE。不是 Apple 官方软件。

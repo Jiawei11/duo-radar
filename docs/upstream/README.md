@@ -1,3 +1,27 @@
+# Upstream archive — English reading guide / 上游存档英文导读
+
+This is historical documentation for **suversal / Guodao Radar**, preserved for provenance. It is not the current Duo Radar manual. Use [the current English/Chinese README](../../README.md) for supported US features. The original Chinese document follows unchanged below.
+
+这是果到雷达的历史存档，不是本版使用说明。当前功能以上方链接的中英双语 README 为准，下方原中文全文保留。
+
+## English guide to the archived manual
+
+- **Overview and installation:** the upstream Rust/Tauri/React app supported macOS, Windows and Linux, multiple regions, stores and product categories. Its release assets included macOS DMG, Windows x64 setup EXE and Linux distribution packages. Read the original platform requirements for that historical build; Duo Radar currently distributes Windows x64.
+- **Quick start and monitoring:** choose a region, stores and exact product variants, configure alerts, test them, then start monitoring. Multi-selection creates store/variant combinations. Logs distinguish each cycle and preserve store numbers and part numbers. Close minimizes to the tray; quit stops the background process. Sleep/shutdown stops checks.
+- **Notifications:** the historical upstream offered sound, Bark URLs (including per-product overrides), product/bag/education-bag destinations and a test-alert action. Bark setup involved installing Bark on iPhone, copying the private push URL into the app and testing it. Do not publish push URLs. Bark is removed from current Duo Radar.
+- **Stock and delivery:** confirmed pickup availability takes precedence over delivery text. “Unknown,” missing SKU, unsupported pickup, not-yet-released and pending pickup are distinct. Apple delivery quotes are displayed as returned, without inventing exact dates from week ranges. Mainland-China delivery location selection is not a US delivery setting.
+- **Historical China checkout:** an optional dedicated browser flow was restricted to mainland-China retail pickup and was off by default. It validated a single matching SKU/quantity, supported configured pickup/contact/payment preferences, could stop at review and had a separate optional order-submit setting. One checkout reservation prevented simultaneous orders. Failures before submission and uncertain submission outcomes were handled differently to avoid duplicate orders. These historical automatic-order controls are not exposed in Duo Radar.
+- **Dedicated browser and credentials:** querying and checkout used separate profiles from the everyday browser. The historical login feature stored credentials in a separate local checkout-login.json with platform-appropriate access restrictions and stopped on account mismatch, authentication errors or verification requirements. Current Duo Radar prepares guest pickup and does not fill login credentials.
+- **Network routing and Clash:** historical settings offered system networking, a pinned node and a dedicated Clash policy group/port. The archive contains Clash Verge Rev extension-script examples, controller-address setup, health checks and notes for other Clash clients. Route-specific refusals used the upstream version’s documented cooldown policy; do not assume that historical settings appear in Duo Radar’s minimal UI.
+- **Catalogs and updates:** upstream read Apple store/product pages, cached successful manual refreshes, retained safe fallbacks on partial failures and supported its own update signatures. Current Duo Radar has an independent identity and does not use upstream automatic updates.
+- **Troubleshooting:** HTTP 541/403/429 and transport/schema failures must not be treated as out of stock. Browser startup errors should be diagnosed by their concrete cause, not guessed as duplicate instances. Exit from the tray to release app-owned browser profiles; everyday browser profiles should not be cleared. Protected or uncertain checkout states require manual review.
+- **Source development:** install Rust, Node.js and pnpm plus each platform’s Tauri native prerequisites. Typical commands are pnpm install, pnpm tauri dev, pnpm test, pnpm build, cargo test --workspace --lib --tests and pnpm tauri build. The archive also explains cargo metadata errors, paths after renaming a checkout, code structure and opt-in live tests.
+- **Provenance:** direct upstream is ENCHIGO/apple-pickup-watcher, derived from hteen/apple-store-helper. GPL-3.0-or-later, original notices, preserved history and corresponding-source requirements remain in force. Test observations describe their historical run, not live stock.
+
+---
+
+## Original Chinese archive / 原中文存档
+
 # 果到雷达
 
 [![CI](https://github.com/suversal/apple-store-inventory-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/suversal/apple-store-inventory-monitor/actions/workflows/ci.yml)

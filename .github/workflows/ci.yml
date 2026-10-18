@@ -1,4 +1,4 @@
-name: Windows checks
+name: Windows checks / Windows 检查
 on:
   workflow_dispatch:
 permissions:

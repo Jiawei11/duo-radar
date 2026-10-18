@@ -20,6 +20,7 @@ export function MultiCombobox({
   selectionUnit,
   disabled,
   className,
+  language = "zh",
 }: {
   options: ComboboxOption[];
   values: string[];
@@ -30,6 +31,7 @@ export function MultiCombobox({
   selectionUnit: string;
   disabled?: boolean;
   className?: string;
+  language?: "en" | "zh";
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -57,7 +59,7 @@ export function MultiCombobox({
       ? placeholder
       : selectedOptions.length === 1
         ? selectedOptions[0]?.label
-        : `已选 ${selectedOptions.length} ${selectionUnit}`;
+        : language === "en" ? `${selectedOptions.length} ${selectionUnit} selected` : `已选 ${selectedOptions.length} ${selectionUnit}`;
   const selectedTitle = selectedOptions
     .map((option) => [option.label, option.description].filter(Boolean).join(" — "))
     .join("\n");
@@ -84,7 +86,7 @@ export function MultiCombobox({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          aria-label={`${placeholder}，${selectedOptions.length === 0 ? "尚未选择" : triggerText}`}
+          aria-label={`${placeholder}, ${selectedOptions.length === 0 ? (language === "en" ? "none selected" : "尚未选择") : triggerText}`}
           disabled={disabled}
           className={cn("justify-between font-normal", className)}
         >
@@ -115,7 +117,7 @@ export function MultiCombobox({
 
         <div className="flex min-h-10 items-center justify-between gap-3 border-b px-3 py-1.5">
           <span className="text-xs text-muted-foreground" aria-live="polite">
-            已选 {selectedOptions.length} / {options.length}
+            {language === "en" ? "Selected" : "已选"} {selectedOptions.length} / {options.length}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -125,7 +127,7 @@ export function MultiCombobox({
               disabled={filtered.length === 0}
               onClick={toggleFiltered}
             >
-              {allFilteredSelected ? "取消当前结果" : "全选当前结果"}
+              {language === "en" ? (allFilteredSelected ? "Deselect results" : "Select all results") : (allFilteredSelected ? "取消当前结果" : "全选当前结果")}
             </Button>
             <Button
               type="button"
@@ -134,7 +136,7 @@ export function MultiCombobox({
               disabled={values.length === 0}
               onClick={() => onChange([])}
             >
-              清空
+              {language === "en" ? "Clear" : "清空"}
             </Button>
           </div>
         </div>

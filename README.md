@@ -1,41 +1,55 @@
 # Duo Radar
 
-**Jiawei 的 iPhone Duo 美国门店取货监控。**
+**US Apple Store pickup inventory monitoring for iPhone Duo — by Jiawei.**
+**Jiawei 的 iPhone Duo 美国 Apple Store 取货库存监控。**
 
-只关注你要买的 8 个配置：**星光白 / 夜空色 × 256GB / 512GB / 1TB / 2TB**。选好美国 Apple Store，交给电脑定时查询，有货后用声音提醒；点击对应监控行的“加购”，自动准备到游客取货 ZIP 搜索结果。
+[Download Windows / 下载 Windows 版](https://github.com/Jiawei11/duo-radar/releases/latest) · [Report an issue / 反馈问题](https://github.com/Jiawei11/duo-radar/issues) · [English](#english) · [中文](#中文)
 
-[下载 Windows 版](https://github.com/Jiawei11/duo-radar/releases/latest) · [反馈问题](https://github.com/Jiawei11/duo-radar/issues)
+## English
 
-## 开始使用
+Duo Radar is a minimal Windows app for monitoring US Apple Store pickup stock. Choose **Star White or Night Sky × 256GB, 512GB, 1TB or 2TB**. Get a sound alert when Apple confirms availability, then use that monitor row’s **Add to cart** button to prepare a guest pickup search with the correct store ZIP.
 
-1. 在 Releases 下载 `DuoRadar-1.3.0-setup.exe` 安装，或使用 `DuoRadar.exe` 直接运行。
-2. 点击 Dallas、Austin、Houston 快捷按钮，或搜索其他美国门店。
-3. 在两行配置按钮中选择颜色与容量，点击“添加监控”，再“开始监控”。
-4. 按需开启声音。看到有货后点击该监控行的“加购”，等待显示已应用门店 ZIP，再自行选择门店并完成后续操作。Duo 下方的 iPhone 17 雾蓝色 256GB 可以同样添加到列表测试。
+<details>
+<summary>Interface previews / 界面预览 (sample data / 示例数据)</summary>
 
-运行环境：Windows 10/11 x64，已安装 Chrome 或 Edge。电脑休眠、关机或彻底退出后不会查询；关闭窗口会收进托盘。
+![English interface, sample data](docs/ui-english.jpg)
 
-## 精简到需要的功能
+![中文界面，示例数据](docs/ui-chinese.jpg)
 
-- 全美国 Apple Store，iPhone Duo 的 8 个颜色容量组合，另有一个 iPhone 17 测试配置，支持多选。
-- 达拉斯、奥斯汀、休斯顿及周边 14 家店快捷选择，亦可搜索其他美国门店。
-- 监控列表的门店名下显示城市、州和 ZIP，便于在 Apple 页面手动搜索对应取货地点。
-- 默认每轮结束后 30 秒再查；有货声音提醒；每行独立“加购”按钮，列表支持一键清空（先暂停监控）。
-- 有货、无货、待开放取货、查询失败分开显示。403 / 541 / 429 和网络错误不会伪装成无货。
-- 无中国大陆送货地址、无其他品类选择；不提交订单或付款，无原作者社交推广。
-- 设置与专属查询浏览器保存在 `%APPDATA%\duo-radar\`；不读取日常浏览器资料。
+</details>
 
-这是查询和提醒工具，不预留库存、不下单、不付款。最终取货资格和库存以 Apple 官网结账结果为准。加购按“门店＋型号”使用不同浏览器资料，不读取日常购物袋；同款数量为 1 时复用。重复点击已经准备好的条目只重新显示该浏览器，保留手动操作进度。取货门店仍需在 Apple 页面确认。
+### Get started
 
-## 查询方式与验证
+1. Download `DuoRadar-1.4.0-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
+2. The app starts in **English**. Use the **English / 中文** selector at the top to switch languages. Your preference is saved on this computer; switching does not reset monitors or selections.
+3. Search any US store, or use the Dallas, Austin and Houston shortcuts covering 14 Texas stores. Select configurations, click **Add monitors**, then **Start monitoring**.
+4. When stock is found, click **Add to cart** on the matching row. Wait for its completion message, then choose the actual pickup store and finish manually on Apple.
 
-Rust 后台通过独立 Chrome/Edge 会话访问 Apple 美国站的公开取货接口，使用美国商品 SKU 和门店 ZIP 查询，并按门店编号精确匹配。数据解析、请求间隔、错误状态保留在后台处理。
+The monitor list shows each store’s city, state and ZIP. **Clear list** pauses monitoring before removing all entries and asks for confirmation. Closing the window minimizes to the tray; use **Quit / 退出** to exit. Sleep, shutdown and a full exit stop inventory checks.
 
-Windows 本机已验证 Dallas NorthPark Center、Austin Domain NORTHSIDE、Houston Galleria，以及纽约 Fifth Avenue、旧金山 Union Square、洛杉矶 The Grove 的浏览器查询。这验证了跨州查询路径，不代表已逐一测试所有门店。iPhone Duo 的 8 个配置在测试时返回“10.24 再查看取货情况”，界面显示“待开放取货”，不会触发有货提醒。该记录不代表当前库存。
+### What the app does
 
-## 从源码运行
+- US stores only; eight iPhone Duo configurations plus **iPhone 17 256GB Mist Blue** for testing.
+- Sound alerts and an optional pause when stock is found; a default 30-second delay after each cycle.
+- Separate states for in stock, out of stock, pickup not yet open and query failure. HTTP 403 / 541 / 429, missing SKUs and network failures are never presented as “out of stock.”
+- A separate browser/cart for each **store + configuration**, isolated from your everyday Chrome/Edge profile.
+- A row’s cart flow selects no trade-in, full payment, connect to a carrier later and no AppleCare; verifies the exact SKU and quantity **1**; then performs **Check Out → Continue as Guest → I’ll pick it up → store ZIP → Apply**.
+- Automation stops after the ZIP editor closes and pickup store results load. **It does not choose a store, click Continue to Pickup Details, enter contact/payment information or place an order.** Reopening a prepared row brings its existing browser forward and preserves manual progress.
+- No Bark push, mainland-China delivery settings, other product categories or automatic browser opening on stock events.
 
-依赖：Rust 1.90+ MSVC、Node.js 22.12+、pnpm、Visual Studio C++ Build Tools、Windows SDK。
+Apple’s product names, store names, pickup quotes and unrecognized external diagnostics remain verbatim for accurate comparison. App controls, statuses and common diagnostics support English and Chinese. The selected UI language is stored locally in the WebView; settings and dedicated browser profiles are under `%APPDATA%\duo-radar\`.
+
+This is a community tool, not an Apple product. It does not guarantee stock, reserve an item or pay for an order. Final stock and pickup eligibility are determined by Apple.
+
+### Validation and limitations
+
+The Windows browser engine has queried representative stores in Dallas, Austin, Houston, New York, San Francisco and Los Angeles. This verifies the cross-state query path, not every US store or future availability. Two independent iPhone 17 guest-cart sessions applied **75225 / NorthPark Center R144** and **10153 / Fifth Avenue R095** and returned the correct city’s results. Reopening the first session did not add another item.
+
+Duo pickup was not yet open during those tests, so its real add-to-cart flow remains unverified until availability opens. Historical test results are not live stock. See [v1.2 validation](docs/v1.2-validation.md) and [v1.3 validation](docs/v1.3-validation.md).
+
+### Build from source
+
+Requirements: Rust 1.90+ MSVC, Node.js 22.12+, pnpm, Visual Studio C++ Build Tools and Windows SDK.
 
 ```powershell
 git clone https://github.com/Jiawei11/duo-radar.git
@@ -51,26 +65,62 @@ cargo test --workspace --lib --tests
 pnpm tauri build --bundles nsis
 ```
 
-手动验证全美代表门店和三城 × 8 个 Duo 配置，仅查询，不购买：
+Build outputs: `target/release/` and `target/release/bundle/nsis/`. VS Code tasks provide development, build and live-test commands. Live tests are opt-in:
 
 ```powershell
+# Inventory only; no purchase
 cargo test -p apple-store-inventory-monitor live_us_nationwide -- --ignored --nocapture
 cargo test -p apple-store-inventory-monitor live_duo_texas_eight_variants -- --ignored --nocapture
+# Adds iPhone 17 and prepares guest pickup ZIP results; never places an order
+cargo test -p apple-store-inventory-monitor live_us_cart_and_repeat -- --ignored --nocapture
 ```
 
-构建产物位于 `target/release/` 和 `target/release/bundle/nsis/`。VS Code 的“运行任务”也提供开发、构建和真实查询测试入口。
+### Credits and license
 
-加购流程通过 Apple 商品页选择不折抵、全款、稍后连接运营商、不加 AppleCare，添加购物袋并核对 SKU 与数量，然后点击 Check Out → Continue as Guest → I’ll pick it up，填入对应门店 ZIP 并 Apply。等搜索面板收起、门店结果加载后停止，不选择门店、不点击 Continue to Pickup Details、不提交订单或付款。库存查询不会自动触发浏览器。当前可用的 iPhone 17 测试配置用于验证链路；Duo 尚未开放取货，真实加购仍待验证。
+- **[Jiawei11](https://github.com/Jiawei11)** — maintainer, product direction, US/Duo requirements and releases.
+- **[suversal / Guodao Radar](https://github.com/suversal/apple-store-inventory-monitor)** — direct upstream; Chromium queries, batch monitoring and notification foundations.
+- **[ENCHIGO](https://github.com/ENCHIGO/apple-pickup-watcher)**, **[hteen](https://github.com/hteen/apple-store-helper)** and upstream contributors — original projects and core foundations.
+- **OpenAI Codex / ChatGPT** — assisted with US adaptation, UI, English/Chinese localization, tests, documentation and Windows packaging.
 
-## S/O · Contributors
+This is a modified version of Guodao Radar, retaining upstream Git history, copyrights and provenance. GitHub’s Contributors sidebar is generated from Git history; AI assistance is acknowledged here. Licensed under **GPL-3.0-or-later**; see the unchanged [LICENSE](LICENSE) and [NOTICE](NOTICE). Corresponding source is provided with releases. Not affiliated with or endorsed by Apple Inc.
 
-- **[Jiawei11](https://github.com/Jiawei11)**：本版本维护者；产品方向、Duo 专用需求、德州门店与发布。
-- **[suversal / 果到雷达](https://github.com/suversal/apple-store-inventory-monitor)**：直接上游，提供 Chromium 查询、批量监控和提醒等基础。
-- **[ENCHIGO](https://github.com/ENCHIGO/apple-pickup-watcher)**、**[hteen](https://github.com/hteen/apple-store-helper)** 及上游贡献者：原始监控项目与核心基础。
-- **OpenAI Codex / ChatGPT**：协助美国站适配、Duo 专用界面、测试、文档和 Windows 打包。
+Historical upstream documents are in [docs/upstream](docs/upstream/README.md), with an English reading guide and the preserved original Chinese text. They describe older upstream features, not the current Duo Radar feature set.
 
-本项目是基于果到雷达的修改版，保留上游 Git 历史、版权与来源声明；不声称上述基础代码由本版本重新原创。GitHub 侧栏 Contributors 由实际 Git 历史自动生成，AI 协作贡献在此明确致谢。
+## 中文
 
-## 许可
+Duo Radar 是极简的 Windows 美国 Apple Store 取货监控工具，专注 **星光白 / 夜空色 × 256GB / 512GB / 1TB / 2TB** 八个配置。Apple 明确返回有货后播放声音，你可点击该行“加购”，准备到对应 ZIP 的游客取货搜索结果。
 
-继续使用 **GPL-3.0-or-later**。原许可全文见 [LICENSE](LICENSE)，完整来源与修改声明见 [NOTICE](NOTICE)。分发修改版本时请一并提供相应源码及许可。与 Apple Inc. 无隶属或授权关系。
+### 开始使用
+
+1. 下载 `DuoRadar-1.4.0-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
+2. 首次默认显示 English，顶部 **English / 中文** 可即时切换并记住选择；不会清空监控或已选配置。
+3. 搜索全美国门店，或使用 Dallas、Austin、Houston 的 14 家德州门店快捷按钮。选择配置，点击“添加监控”，再“开始监控”。
+4. 看到有货后点击对应行“加购”，等待完成提示，再自行选择实际取货门店和完成后续流程。
+
+门店名下显示城市、州和 ZIP。“清空列表”需确认，并先暂停监控。关闭窗口会收进托盘，使用“Quit / 退出”完全退出；电脑休眠、关机或彻底退出后停止查询。
+
+### 功能与边界
+
+- 仅美国门店、Duo 八配置，另有 iPhone 17 雾蓝色 256GB 测试配置。
+- 声音提醒、到货后可暂停；默认每轮结束 30 秒后再查。
+- 有货、无货、待开放取货、查询失败分开显示；HTTP 403 / 541 / 429、缺失 SKU 和网络故障不冒充无货。
+- 按“门店＋配置”隔离浏览器和购物袋，不读取日常 Chrome/Edge 用户资料。
+- 每行加购会选择无折抵、全款、稍后连接运营商、不加 AppleCare，核对 SKU 与数量 1，再执行 Check Out → Continue as Guest → I’ll pick it up → 门店 ZIP → Apply。
+- ZIP 编辑框收起、门店结果加载后停止；不选门店，不点 Continue to Pickup Details，不填联系人或付款信息，不提交订单。重复点击已准备条目只显示原浏览器，保留手动进度。
+- 无 Bark、中国大陆送货地址和其他品类选择；库存事件不自动打开浏览器。
+
+控件、状态和常用诊断支持中英文。Apple 商品名、门店名、取货说明及无法识别的外部诊断保留原文，便于核对。界面语言保存在本机 WebView，设置及专用浏览器资料在 `%APPDATA%\duo-radar\`。
+
+本工具不保证库存、不预留商品、不付款；最终库存及取货资格以 Apple 为准。与 Apple 无隶属或授权关系。
+
+### 验证与开发
+
+已验证 Dallas、Austin、Houston、New York、San Francisco、Los Angeles 的代表门店查询，不代表逐一验证所有门店。两个独立 iPhone 17 游客购物袋分别应用 75225（NorthPark Center R144）和 10153（Fifth Avenue R095），结果未串用；重开第一条不重复加购。Duo 在测试时尚未开放取货，真实加购仍待验证。历史记录不代表当前库存，详见上方验证文档。
+
+源码运行、构建、产物位置与可选真实测试见上方英文部分的命令。真实游客测试会加购并进入 ZIP 搜索结果，但不提交订单。
+
+### 致谢与许可
+
+Jiawei11 维护本版；感谢直接上游 suversal / 果到雷达、ENCHIGO、hteen 及全部上游贡献者。OpenAI Codex / ChatGPT 协助美国适配、界面、双语、测试、文档和打包。保留全部上游 Git 历史、版权与来源，不声称基础代码为本版原创；AI 协作在此明确致谢。
+
+继续使用 **GPL-3.0-or-later**，正式许可原文 [LICENSE](LICENSE) 不作改写，来源及修改见 [NOTICE](NOTICE)，发布时提供对应源码。上游历史文档保留原文并附英文导读，不应当作本版当前功能说明。

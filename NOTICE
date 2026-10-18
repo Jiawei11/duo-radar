@@ -1,3 +1,25 @@
+NOTICE — English provenance and modification statement
+======================================================
+
+Duo Radar is maintained by Jiawei11. OpenAI Codex / ChatGPT assisted with the US adaptation, minimal Duo interface, per-monitor guest pickup ZIP preparation, English/Chinese localization, tests, documentation and Windows packaging. Version 1.4.0 adds a saved English / Chinese UI preference and English-first bilingual project documentation.
+
+The direct source is suversal/apple-store-inventory-monitor at 363601e (Guodao Radar). That project derives from ENCHIGO/apple-pickup-watcher v0.3.2 (fd17a41), itself a Rust rewrite of hteen/apple-store-helper. Upstream history, original copyrights and the complete unchanged GPL license are retained. Renaming or rewriting does not erase this provenance. All derived code remains GPL-3.0-or-later.
+
+Copyright (C) 2020-2025 Hteen and the apple-store-helper contributors
+Copyright (C) 2026 the apple-pickup-watcher contributors
+Copyright (C) 2026 the apple-store-inventory-monitor contributors
+
+Earlier contributors acknowledged upstream include Hteen, Timssse, Black-Hole / BlackHole1, RayJason and Warkeeper. Their work and other contributors remain visible in the retained history. Direct upstream contributor records: https://github.com/ENCHIGO/apple-pickup-watcher/graphs/contributors
+
+US modifications include the en_US region, US product/store catalogs, ZIP-based queries, Texas shortcuts, isolated app identity and profiles, disabled upstream updating, a minimal two-color/four-capacity Duo UI, removal of mainland-China delivery/Bark/social-promotion controls, per-row cart sessions and bounded guest pickup preparation. The app stops before store/contact/payment/order submission. Source matching the distributed binaries is provided with releases.
+
+The upstream rewrite from Go to Rust and Tauri does not remove GPL obligations. This repository preserves the original license text in LICENSE. Modified versions must preserve applicable notices and provide corresponding source as required by that license. This explanatory translation does not replace the formal license or remove any original notice below.
+
+Rust dependencies include Tauri (MIT OR Apache-2.0), Tokio (MIT), Reqwest (MIT OR Apache-2.0), Serde/serde_json (MIT OR Apache-2.0), thiserror (MIT OR Apache-2.0), rand (MIT OR Apache-2.0), rodio (MIT OR Apache-2.0) and dirs (MIT OR Apache-2.0). Frontend dependencies include React/React DOM (MIT), Radix UI (MIT), Tailwind CSS (MIT), lucide-react (ISC), cmdk (MIT), Vite (MIT), TypeScript (Apache-2.0) and shadcn/ui-derived components (MIT). Exact dependency/license records are available from cargo metadata and pnpm licenses list.
+
+Original Chinese notices / 原中文声明（完整保留）
+================================================
+
 ================================================================================
 NOTICE — 来源、版权与修改声明
 ================================================================================
