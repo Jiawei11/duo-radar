@@ -1,0 +1,35 @@
+[
+  {
+    "city": "Dallas",
+    "zip": "75225",
+    "store": "R144",
+    "name": "NorthPark Center",
+    "part": "MG484LL/A",
+    "status": "available",
+    "quote": "Available Tomorrow",
+    "product": "iPhone 17 256GB Mist Blue",
+    "checkedAtUtc": "2026-10-18T01:36:55Z"
+  },
+  {
+    "city": "Austin",
+    "zip": "78758",
+    "store": "R216",
+    "name": "Domain NORTHSIDE",
+    "part": "MG484LL/A",
+    "status": "available",
+    "quote": "Available Tomorrow",
+    "product": "iPhone 17 256GB Mist Blue",
+    "checkedAtUtc": "2026-10-18T01:36:58Z"
+  },
+  {
+    "city": "Houston",
+    "zip": "77056",
+    "store": "R058",
+    "name": "Houston Galleria",
+    "part": "MG484LL/A",
+    "status": "available",
+    "quote": "Available Tomorrow",
+    "product": "iPhone 17 256GB Mist Blue",
+    "checkedAtUtc": "2026-10-18T01:37:01Z"
+  }
+]

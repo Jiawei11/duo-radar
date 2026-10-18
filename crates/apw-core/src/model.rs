@@ -310,7 +310,9 @@ impl Region {
 
     /// 对应地区的教育商店购物袋页面地址。
     pub fn education_bag_url(&self) -> String {
-        if self.locale == "zh_CN" {
+        if self.locale == "en_US" {
+            format!("{}/us-edu/shop/bag", self.base_url)
+        } else if self.locale == "zh_CN" {
             format!("{}/cn-edu/shop/bag", self.base_url)
         } else {
             format!("{}-edu/shop/bag", self.base_url)
@@ -438,7 +440,44 @@ const DEFAULT_FAMILIES: &[Family<'static>] = &[
 /// 内置地区表。
 ///
 /// 每个 `base_url` 都对应 Apple 当前在线商店的正式地区入口。
+const US_FAMILIES: &[Family<'static>] = &[
+    Family {
+        category: Category::Iphone,
+        slug: "iphone-17",
+    },
+    Family {
+        category: Category::Iphone,
+        slug: "iphone-18-pro",
+    },
+    Family {
+        category: Category::Iphone,
+        slug: "iphone-air",
+    },
+    Family {
+        category: Category::Iphone,
+        slug: "iphone-duo",
+    },
+    Family {
+        category: Category::Ipad,
+        slug: "ipad",
+    },
+    Family {
+        category: Category::Mac,
+        slug: "mac-mini",
+    },
+    Family {
+        category: Category::Watch,
+        slug: "apple-watch",
+    },
+];
+
 pub const REGIONS: &[Region] = &[
+    Region {
+        title: "United States 美国",
+        locale: "en_US",
+        base_url: "https://www.apple.com",
+        families: US_FAMILIES,
+    },
     Region {
         title: "中国大陆",
         locale: "zh_CN",
@@ -553,7 +592,7 @@ impl Store {
         match locale {
             // 大陆站只写城市会被拒绝，必须使用「省 市」。
             "zh_CN" => (!state.is_empty() && !city.is_empty()).then(|| format!("{state} {city}")),
-            "ja_JP" => pick(postal).or_else(|| pick(city)),
+            "ja_JP" | "en_US" => pick(postal).or_else(|| pick(city)),
             _ => pick(city).or_else(|| pick(postal)),
         }
     }
@@ -678,7 +717,7 @@ mod tests {
 
     #[test]
     fn 地区表里每个站点都能拼出接口地址() {
-        assert_eq!(REGIONS.len(), 7);
+        assert_eq!(REGIONS.len(), 8);
         let cn = region_by_locale("zh_CN").expect("地区表里应当有中国大陆");
         assert_eq!(
             cn.pickup_message_url(),

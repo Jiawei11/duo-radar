@@ -1,0 +1,2759 @@
+{
+  "head": {
+    "status": "200",
+    "data": {}
+  },
+  "body": {
+    "stores": [
+      {
+        "storeEmail": "houstongalleria@apple.com",
+        "storeName": "Houston Galleria",
+        "reservationUrl": "http://www.apple.com/retail/houstongalleria",
+        "makeReservationUrl": "http://www.apple.com/retail/houstongalleria",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R058.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Houston",
+        "storeNumber": "R058",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Houston Galleria",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Houston Galleria</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "713-3535471",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Houston Galleria",
+          "address3": null,
+          "address2": "5085 Westheimer Road",
+          "postalCode": "77056"
+        },
+        "hoursUrl": "http://www.apple.com/retail/houstongalleria",
+        "directionsUrl": "http://www.apple.com/retail/houstongalleria",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "11:00 AM-7:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.739061031416,
+        "storelongitude": -95.464409840804,
+        "storedistance": 0.74,
+        "storeDistanceWithUnit": "0.74 mi",
+        "storeDistanceVoText": "0.74 mi from 77056",
+        "retailStore": {
+          "storeNumber": "R058",
+          "storeUniqueId": "R058",
+          "name": "Houston Galleria",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "713-3535471",
+          "email": "houstongalleria@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.739061031416,
+          "longitude": -95.464409840804,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Houston Galleria",
+            "street": "5085 Westheimer Road",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Houston",
+            "county": null,
+            "district": null,
+            "postalCode": "77056",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "713-3535471",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "cc5a9db0-0152-4af8-b986-a9f9f9918fc0",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/houstongalleria",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R058.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/houstongalleria",
+          "storeHours": [
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-7:00 PM"
+            },
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "Apple Event",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R058.png?resize=828:*&output-format=jpg",
+          "distance": 0.74,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "0.74 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139925,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.739061031416,
+                "lon": -95.464409840804
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 1,
+        "storeListNumber": 1,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 1
+      },
+      {
+        "storeEmail": "highlandvillage@apple.com",
+        "storeName": "Highland Village",
+        "reservationUrl": "http://www.apple.com/retail/highlandvillage",
+        "makeReservationUrl": "http://www.apple.com/retail/highlandvillage",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R437.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Houston",
+        "storeNumber": "R437",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Highland Village",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Highland Village</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "832-325 3500",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Highland Village",
+          "address3": null,
+          "address2": "4012 Westheimer Road",
+          "postalCode": "77027"
+        },
+        "hoursUrl": "http://www.apple.com/retail/highlandvillage",
+        "directionsUrl": "http://www.apple.com/retail/highlandvillage",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "11:00 AM-7:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-8:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.74197,
+        "storelongitude": -95.44574,
+        "storedistance": 1.39,
+        "storeDistanceWithUnit": "1.39 mi",
+        "storeDistanceVoText": "1.39 mi from 77027",
+        "retailStore": {
+          "storeNumber": "R437",
+          "storeUniqueId": "R437",
+          "name": "Highland Village",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "832-325 3500",
+          "email": "highlandvillage@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.74197,
+          "longitude": -95.44574,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Highland Village",
+            "street": "4012 Westheimer Road",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Houston",
+            "county": null,
+            "district": null,
+            "postalCode": "77027",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "832-325 3500",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "98f847c5-a587-4e90-bf62-ba76f0a18d8d",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/highlandvillage",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R437.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/highlandvillage",
+          "storeHours": [
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-7:00 PM"
+            },
+            {
+              "storeDays": "Mon-Sat",
+              "voStoreDays": "Monday-Saturday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-8:00 PM",
+              "comments": "iPhone Duo Availability",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R437.png?resize=828:*&output-format=jpg",
+          "distance": 1.39,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "1.39 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.74197,
+                "lon": -95.44574
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 2,
+        "storeListNumber": 2,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 2
+      },
+      {
+        "storeEmail": "memorialcity@apple.com",
+        "storeName": "Memorial City",
+        "reservationUrl": "http://www.apple.com/retail/memorialcity",
+        "makeReservationUrl": "http://www.apple.com/retail/memorialcity",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R164.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Houston",
+        "storeNumber": "R164",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Memorial City",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Memorial City</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "713-986 2476",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Memorial City",
+          "address3": null,
+          "address2": "303 Memorial City",
+          "postalCode": "77024"
+        },
+        "hoursUrl": "http://www.apple.com/retail/memorialcity",
+        "directionsUrl": "http://www.apple.com/retail/memorialcity",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "11:00 AM-7:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.78102,
+        "storelongitude": -95.53893,
+        "storedistance": 4.82,
+        "storeDistanceWithUnit": "4.82 mi",
+        "storeDistanceVoText": "4.82 mi from 77024",
+        "retailStore": {
+          "storeNumber": "R164",
+          "storeUniqueId": "R164",
+          "name": "Memorial City",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "713-986 2476",
+          "email": "memorialcity@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.78102,
+          "longitude": -95.53893,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Memorial City",
+            "street": "303 Memorial City",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Houston",
+            "county": null,
+            "district": null,
+            "postalCode": "77024",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "713-986 2476",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "3aba93c1-7e6b-478f-9814-8f9a1eec5793",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/memorialcity",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R164.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/memorialcity",
+          "storeHours": [
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-7:00 PM"
+            },
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "iPhone Duo Launch",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R164.png?resize=828:*&output-format=jpg",
+          "distance": 4.82,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "4.82 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.78102,
+                "lon": -95.53893
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 3,
+        "storeListNumber": 3,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 3
+      },
+      {
+        "storeEmail": "firstcolonymall@apple.com",
+        "storeName": "First Colony Mall",
+        "reservationUrl": "http://www.apple.com/retail/firstcolonymall",
+        "makeReservationUrl": "http://www.apple.com/retail/firstcolonymall",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R205.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Sugar Land",
+        "storeNumber": "R205",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple First Colony Mall",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple First Colony Mall</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "281-269 3410",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple First Colony Mall",
+          "address3": null,
+          "address2": "16535 Southwest Freeway",
+          "postalCode": "77479"
+        },
+        "hoursUrl": "http://www.apple.com/retail/firstcolonymall",
+        "directionsUrl": "http://www.apple.com/retail/firstcolonymall",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.59141,
+        "storelongitude": -95.625,
+        "storedistance": 14.46,
+        "storeDistanceWithUnit": "14.46 mi",
+        "storeDistanceVoText": "14.46 mi from 77479",
+        "retailStore": {
+          "storeNumber": "R205",
+          "storeUniqueId": "R205",
+          "name": "First Colony Mall",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "281-269 3410",
+          "email": "firstcolonymall@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.59141,
+          "longitude": -95.625,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple First Colony Mall",
+            "street": "16535 Southwest Freeway",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Sugar Land",
+            "county": null,
+            "district": null,
+            "postalCode": "77479",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "281-269 3410",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "1f288583-adae-468a-be82-7a5d7766a4f0",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/firstcolonymall",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R205.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/firstcolonymall",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "Special Event",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R205.png?resize=828:*&output-format=jpg",
+          "distance": 14.46,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "14.46 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.59141,
+                "lon": -95.625
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 4,
+        "storeListNumber": 4,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 4
+      },
+      {
+        "storeEmail": "willowbrookmall@apple.com",
+        "storeName": "Willowbrook Mall",
+        "reservationUrl": "http://www.apple.com/retail/willowbrookmall",
+        "makeReservationUrl": "http://www.apple.com/retail/willowbrookmall",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R321.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Houston",
+        "storeNumber": "R321",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Willowbrook Mall",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Willowbrook Mall</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "281-571 4400",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Willowbrook Mall",
+          "address3": null,
+          "address2": "2000 Willowbrook Drive",
+          "postalCode": "77070"
+        },
+        "hoursUrl": "http://www.apple.com/retail/willowbrookmall",
+        "directionsUrl": "http://www.apple.com/retail/willowbrookmall",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.960546845453,
+        "storelongitude": -95.539229502601,
+        "storedistance": 15.21,
+        "storeDistanceWithUnit": "15.21 mi",
+        "storeDistanceVoText": "15.21 mi from 77070",
+        "retailStore": {
+          "storeNumber": "R321",
+          "storeUniqueId": "R321",
+          "name": "Willowbrook Mall",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "281-571 4400",
+          "email": "willowbrookmall@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.960546845453,
+          "longitude": -95.539229502601,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Willowbrook Mall",
+            "street": "2000 Willowbrook Drive",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Houston",
+            "county": null,
+            "district": null,
+            "postalCode": "77070",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "281-571 4400",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "8a2d00f5-eb6c-4fc0-ba86-a447f567b63c",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/willowbrookmall",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R321.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/willowbrookmall",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "iPhone Launch",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R321.png?resize=828:*&output-format=jpg",
+          "distance": 15.21,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "15.21 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.9605468454527,
+                "lon": -95.5392295026013
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 5,
+        "storeListNumber": 5,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 5
+      },
+      {
+        "storeEmail": "baybrook@apple.com",
+        "storeName": "Baybrook",
+        "reservationUrl": "http://www.apple.com/retail/baybrook",
+        "makeReservationUrl": "http://www.apple.com/retail/baybrook",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R204.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Friendswood",
+        "storeNumber": "R204",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Baybrook",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Baybrook</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "281-204 0500",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Baybrook",
+          "address3": null,
+          "address2": "500 Baybrook Mall",
+          "postalCode": "77546"
+        },
+        "hoursUrl": "http://www.apple.com/retail/baybrook",
+        "directionsUrl": "http://www.apple.com/retail/baybrook",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.5415,
+        "storelongitude": -95.1479,
+        "storedistance": 23.96,
+        "storeDistanceWithUnit": "23.96 mi",
+        "storeDistanceVoText": "23.96 mi from 77546",
+        "retailStore": {
+          "storeNumber": "R204",
+          "storeUniqueId": "R204",
+          "name": "Baybrook",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "281-204 0500",
+          "email": "baybrook@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.5415,
+          "longitude": -95.1479,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Baybrook",
+            "street": "500 Baybrook Mall",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Friendswood",
+            "county": null,
+            "district": null,
+            "postalCode": "77546",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "281-204 0500",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "3dcd8f9c-3a9f-450d-bafb-38340cfcd742",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/baybrook",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R204.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/baybrook",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "Launch",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R204.png?resize=828:*&output-format=jpg",
+          "distance": 23.96,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "23.96 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.5415,
+                "lon": -95.1479
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 6,
+        "storeListNumber": 6,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 6
+      },
+      {
+        "storeEmail": "thewoodlands@apple.com",
+        "storeName": "The Woodlands",
+        "reservationUrl": "http://www.apple.com/retail/thewoodlands",
+        "makeReservationUrl": "http://www.apple.com/retail/thewoodlands",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R126.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "The Woodlands",
+        "storeNumber": "R126",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple The Woodlands",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple The Woodlands</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "281-203 6870",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple The Woodlands",
+          "address3": null,
+          "address2": "1201 Lake Woodlands Drive",
+          "postalCode": "77380"
+        },
+        "hoursUrl": "http://www.apple.com/retail/thewoodlands",
+        "directionsUrl": "http://www.apple.com/retail/thewoodlands",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 30.1645,
+        "storelongitude": -95.4555,
+        "storedistance": 28.68,
+        "storeDistanceWithUnit": "28.68 mi",
+        "storeDistanceVoText": "28.68 mi from 77380",
+        "retailStore": {
+          "storeNumber": "R126",
+          "storeUniqueId": "R126",
+          "name": "The Woodlands",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "281-203 6870",
+          "email": "thewoodlands@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 30.1645,
+          "longitude": -95.4555,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple The Woodlands",
+            "street": "1201 Lake Woodlands Drive",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "The Woodlands",
+            "county": null,
+            "district": null,
+            "postalCode": "77380",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "281-203 6870",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "b2a110ae-2a51-4ae8-804d-802fbfcf32eb",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/thewoodlands",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R126.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/thewoodlands",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "iPhone Duo Launch",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R126.png?resize=828:*&output-format=jpg",
+          "distance": 28.68,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "28.68 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 30.1645,
+                "lon": -95.4555
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 7,
+        "storeListNumber": 7,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 7
+      },
+      {
+        "storeEmail": "appledomainnorthside@apple.com",
+        "storeName": "Domain NORTHSIDE",
+        "reservationUrl": "http://www.apple.com/retail/domainnorthside",
+        "makeReservationUrl": "http://www.apple.com/retail/domainnorthside",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R216.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Austin",
+        "storeNumber": "R216",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Domain NORTHSIDE",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Domain NORTHSIDE</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "512-691 4800",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Domain NORTHSIDE",
+          "address3": null,
+          "address2": "3121 Palm Way",
+          "postalCode": "78758"
+        },
+        "hoursUrl": "http://www.apple.com/retail/domainnorthside",
+        "directionsUrl": "http://www.apple.com/retail/domainnorthside",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Mon-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 30.402708,
+        "storelongitude": -97.721954,
+        "storedistance": 142.17,
+        "storeDistanceWithUnit": "142.17 mi",
+        "storeDistanceVoText": "142.17 mi from 78758",
+        "retailStore": {
+          "storeNumber": "R216",
+          "storeUniqueId": "R216",
+          "name": "Domain NORTHSIDE",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "512-691 4800",
+          "email": "appledomainnorthside@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 30.402708,
+          "longitude": -97.721954,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Domain NORTHSIDE",
+            "street": "3121 Palm Way",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Austin",
+            "county": null,
+            "district": null,
+            "postalCode": "78758",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "512-691 4800",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "4aebd7f3-9d14-4a7b-8926-987e0266ef15",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/domainnorthside",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R216.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/domainnorthside",
+          "storeHours": [
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Mon-Sat",
+              "voStoreDays": "Monday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "Launch Day",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R216.png?resize=828:*&output-format=jpg",
+          "distance": 142.17,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "142.17 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 30.402708,
+                "lon": -97.721954
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 8,
+        "storeListNumber": 8,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 8
+      },
+      {
+        "storeEmail": "bartoncreek@apple.com",
+        "storeName": "Barton Creek",
+        "reservationUrl": "http://www.apple.com/retail/bartoncreek",
+        "makeReservationUrl": "http://www.apple.com/retail/bartoncreek",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R085.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Austin",
+        "storeNumber": "R085",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Barton Creek",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Barton Creek</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "512-634 0520",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Barton Creek",
+          "address3": null,
+          "address2": "2901 S. Capital of Texas Hwy",
+          "postalCode": "78746"
+        },
+        "hoursUrl": "http://www.apple.com/retail/bartoncreek",
+        "directionsUrl": "http://www.apple.com/retail/bartoncreek",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 30.25806,
+        "storelongitude": -97.80722,
+        "storedistance": 144.36,
+        "storeDistanceWithUnit": "144.36 mi",
+        "storeDistanceVoText": "144.36 mi from 78746",
+        "retailStore": {
+          "storeNumber": "R085",
+          "storeUniqueId": "R085",
+          "name": "Barton Creek",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "512-634 0520",
+          "email": "bartoncreek@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 30.25806,
+          "longitude": -97.80722,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Barton Creek",
+            "street": "2901 S. Capital of Texas Hwy",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Austin",
+            "county": null,
+            "district": null,
+            "postalCode": "78746",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "512-634 0520",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "b2370553-852a-491f-b7af-5ae655903b88",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/bartoncreek",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R085.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/bartoncreek",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "Special Event",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R085.png?resize=828:*&output-format=jpg",
+          "distance": 144.36,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "144.36 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139927,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 30.25806,
+                "lon": -97.80722
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 9,
+        "storeListNumber": 9,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 9
+      },
+      {
+        "storeEmail": "northstar@apple.com",
+        "storeName": "North Star",
+        "reservationUrl": "http://www.apple.com/retail/northstar",
+        "makeReservationUrl": "http://www.apple.com/retail/northstar",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R290.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "San Antonio",
+        "storeNumber": "R290",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple North Star",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple North Star</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "210-321 4420",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple North Star",
+          "address3": null,
+          "address2": "7400 San Pedro Avenue",
+          "postalCode": "78216"
+        },
+        "hoursUrl": "http://www.apple.com/retail/northstar",
+        "directionsUrl": "http://www.apple.com/retail/northstar",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.518172084308,
+        "storelongitude": -98.496084987277,
+        "storedistance": 182.6,
+        "storeDistanceWithUnit": "182.6 mi",
+        "storeDistanceVoText": "182.6 mi from 78216",
+        "retailStore": {
+          "storeNumber": "R290",
+          "storeUniqueId": "R290",
+          "name": "North Star",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "210-321 4420",
+          "email": "northstar@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.518172084308,
+          "longitude": -98.496084987277,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple North Star",
+            "street": "7400 San Pedro Avenue",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "San Antonio",
+            "county": null,
+            "district": null,
+            "postalCode": "78216",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "210-321 4420",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "da877bde-e78a-49b4-b658-e50aa0266739",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/northstar",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R290.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/northstar",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "iPhone Duo Launch -",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R290.png?resize=828:*&output-format=jpg",
+          "distance": 182.6,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "182.6 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139928,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.518172084308,
+                "lon": -98.496084987277
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 10,
+        "storeListNumber": 10,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 10
+      },
+      {
+        "storeEmail": "lacantera@apple.com",
+        "storeName": "La Cantera",
+        "reservationUrl": "http://www.apple.com/retail/lacantera",
+        "makeReservationUrl": "http://www.apple.com/retail/lacantera",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R131.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "San Antonio",
+        "storeNumber": "R131",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple La Cantera",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple La Cantera</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "210-276 2302",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple La Cantera",
+          "address3": null,
+          "address2": "15900 La Cantera Parkway",
+          "postalCode": "78256"
+        },
+        "hoursUrl": "http://www.apple.com/retail/lacantera",
+        "directionsUrl": "http://www.apple.com/retail/lacantera",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "11:00 AM-7:00 PM",
+              "storeDays": "Sun:"
+            },
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Thu:"
+            },
+            {
+              "storeTimings": "10:00 AM-9:00 PM",
+              "storeDays": "Fri-Sat:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-9:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 29.59333,
+        "storelongitude": -98.61556,
+        "storedistance": 189.31,
+        "storeDistanceWithUnit": "189.31 mi",
+        "storeDistanceVoText": "189.31 mi from 78256",
+        "retailStore": {
+          "storeNumber": "R131",
+          "storeUniqueId": "R131",
+          "name": "La Cantera",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "210-276 2302",
+          "email": "lacantera@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 29.59333,
+          "longitude": -98.61556,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple La Cantera",
+            "street": "15900 La Cantera Parkway",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "San Antonio",
+            "county": null,
+            "district": null,
+            "postalCode": "78256",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "210-276 2302",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "d41d9f34-0b8c-4172-80b5-ed3ca7e1a92b",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/lacantera",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R131.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/lacantera",
+          "storeHours": [
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-7:00 PM"
+            },
+            {
+              "storeDays": "Mon-Thu",
+              "voStoreDays": "Monday-Thursday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Fri-Sat",
+              "voStoreDays": "Friday-Saturday",
+              "storeTimings": "10:00 AM-9:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-9:00 PM",
+              "comments": "NPI",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R131.png?resize=828:*&output-format=jpg",
+          "distance": 189.31,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "189.31 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139928,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 29.59333,
+                "lon": -98.61556
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 11,
+        "storeListNumber": 11,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 11
+      },
+      {
+        "storeEmail": "knoxstreet@apple.com",
+        "storeName": "Knox Street",
+        "reservationUrl": "http://www.apple.com/retail/knoxstreet",
+        "makeReservationUrl": "http://www.apple.com/retail/knoxstreet",
+        "state": "TX",
+        "storeImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R042.png?resize=828:*&output-format=jpg",
+        "country": "US",
+        "city": "Dallas",
+        "storeNumber": "R042",
+        "partsAvailability": {
+          "MG484LL/A": {
+            "storePickEligible": true,
+            "pickupSearchQuote": "Available Tomorrow",
+            "partNumber": "MG484LL/A",
+            "purchaseOption": "",
+            "ctoOptions": "",
+            "pickupDisplay": "available",
+            "pickupType": "In-Store Pickup",
+            "messageTypes": {
+              "regular": {
+                "storeSearchEnabled": true,
+                "storePickupLabel": "Order now. Pick up in store:",
+                "storeSelectionEnabled": true,
+                "storePickupQuote": "Tomorrow at Apple Knox Street",
+                "storePickupQuote2_0": "<span class=\"as-pickup-quote-availability-quote\">Tomorrow</span> at <button type=\"button\" class=\"rf-pickup-quote-overlay-trigger as-retailavailabilitytrigger-infobutton retail-availability-search-trigger as-buttonlink as-buttonlink-inline\" data-ase-overlay=\"buac-overlay\" data-ase-click=\"show\">Apple Knox Street</button>",
+                "storePickupLinkText": "Check availability",
+                "storePickupProductTitle": "iPhone 17 256GB Mist Blue",
+                "basePartNumber": "MG484"
+              }
+            }
+          }
+        },
+        "phoneNumber": "214-520 8532",
+        "pickupTypeAvailabilityText": "In-Store Pickup available at this location.",
+        "address": {
+          "address": "Apple Knox Street",
+          "address3": null,
+          "address2": "3101 Knox Street",
+          "postalCode": "75205"
+        },
+        "hoursUrl": "http://www.apple.com/retail/knoxstreet",
+        "directionsUrl": "http://www.apple.com/retail/knoxstreet",
+        "storeHours": {
+          "storeHoursText": "Store Hours",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "hours": [
+            {
+              "storeTimings": "10:00 AM-8:00 PM",
+              "storeDays": "Mon-Sat:"
+            },
+            {
+              "storeTimings": "11:00 AM-6:00 PM",
+              "storeDays": "Sun:"
+            }
+          ]
+        },
+        "specialHours": {
+          "specialHoursText": "Special store hours:",
+          "bopisPickupDays": "Days",
+          "bopisPickupHours": "Hours",
+          "specialHoursData": [
+            {
+              "specialDays": "Oct 23:",
+              "specialTimings": "8:00 AM-8:00 PM"
+            }
+          ],
+          "viewAllSpecialHours": false
+        },
+        "pickupEncodedUpperDateString": "20261018",
+        "storelatitude": 32.82254,
+        "storelongitude": -96.78791,
+        "storedistance": 226.19,
+        "storeDistanceWithUnit": "226.19 mi",
+        "storeDistanceVoText": "226.19 mi from 75205",
+        "retailStore": {
+          "storeNumber": "R042",
+          "storeUniqueId": "R042",
+          "name": "Knox Street",
+          "storeTypeKey": "1",
+          "storeSubTypeKey": "0",
+          "storeType": "APPLESTORE_DEFAULT",
+          "phoneNumber": "214-520 8532",
+          "email": "knoxstreet@apple.com",
+          "carrierCode": null,
+          "locationType": null,
+          "latitude": 32.82254,
+          "longitude": -96.78791,
+          "address": {
+            "title": null,
+            "firstName": null,
+            "middleName": null,
+            "lastName": null,
+            "suffix": null,
+            "firstNamePhonetic": null,
+            "lastNamePhonetic": null,
+            "companyName": "Apple Knox Street",
+            "street": "3101 Knox Street",
+            "street2": null,
+            "street3": null,
+            "suburb": null,
+            "city": "Dallas",
+            "county": null,
+            "district": null,
+            "postalCode": "75205",
+            "addressCode": null,
+            "state": "TX",
+            "province": null,
+            "countryCode": "US",
+            "daytimePhoneSelected": null,
+            "daytimePhoneAreaCode": null,
+            "daytimePhone": "214-520 8532",
+            "fullPhoneNumber": null,
+            "eveningPhoneAreaCode": null,
+            "eveningPhone": null,
+            "mobilePhone": null,
+            "mobilePhoneAreaCode": null,
+            "secondaryPhoneAreaCode": null,
+            "secondaryPhone": null,
+            "emailAddress": null,
+            "residenceStatus": null,
+            "moveInDate": null,
+            "subscriberId": null,
+            "locationType": null,
+            "carrierCode": null,
+            "twoLineAddress": null,
+            "metadata": null,
+            "uuid": "645a7ffc-2acf-49e3-a3a1-f28fdcfb068a",
+            "geoCode": null,
+            "label": null,
+            "languageCode": "US-EN",
+            "mailStop": null,
+            "type": "SHIPPING",
+            "addressSourceType": null,
+            "outsideCityFlag": null,
+            "primaryAddress": false,
+            "businessAddress": false,
+            "cityStateZip": null,
+            "verificationState": "UN_VERIFIED",
+            "matchingScenario": null,
+            "qualityCode": null,
+            "savedState": null
+          },
+          "urlKey": null,
+          "directionsUrl": "http://www.apple.com/retail/knoxstreet",
+          "storeImageUrl": "http://rtlimages.apple.com/cmc/dieter/store/4_3/R042.png?resize=828:*&output-format=jpg",
+          "makeReservationUrl": null,
+          "hoursAndInfoUrl": "http://www.apple.com/retail/knoxstreet",
+          "storeHours": [
+            {
+              "storeDays": "Mon-Sat",
+              "voStoreDays": "Monday-Saturday",
+              "storeTimings": "10:00 AM-8:00 PM"
+            },
+            {
+              "storeDays": "Sun",
+              "voStoreDays": "Sunday",
+              "storeTimings": "11:00 AM-6:00 PM"
+            }
+          ],
+          "storeHolidays": [
+            {
+              "date": "Oct 23",
+              "description": "Special Event",
+              "hours": "8:00 AM-8:00 PM",
+              "comments": "Duo Launch",
+              "closed": false
+            }
+          ],
+          "secureStoreImageUrl": "https://rtlimages.apple.com/cmc/dieter/store/4_3/R042.png?resize=828:*&output-format=jpg",
+          "distance": 226.19,
+          "distanceUnit": "mi",
+          "distanceWithUnit": "226.19 mi",
+          "timezone": "America/Chicago",
+          "storeIsActive": true,
+          "lastUpdated": 0.0,
+          "lastFetched": 1792287139928,
+          "dateStamp": "17-Oct-2026",
+          "distanceSeparator": ".",
+          "nextAvailableDate": null,
+          "storeHolidayLookAheadWindow": 7,
+          "driveDistanceWithUnit": null,
+          "driveDistanceInMeters": null,
+          "dynamicAttributes": {},
+          "storePickupMethodByType": {
+            "INSTORE": {
+              "type": "INSTORE",
+              "services": [
+                "APU"
+              ],
+              "typeDirection": {
+                "directionByLocale": null
+              },
+              "typeCoordinate": {
+                "lat": 32.82254,
+                "lon": -96.78791
+              },
+              "typeMeetupLocation": {
+                "meetingLocationByLocale": null
+              }
+            }
+          },
+          "storeTimings": null,
+          "availableNow": true
+        },
+        "storelistnumber": 12,
+        "storeListNumber": 12,
+        "pickupOptionsDetails": {
+          "whatToExpectAtPickup": "<h4 class=\"as-pickupmethods-intro-header\">What to expect at pickup </h4><br /> We\u2019ll email detailed pickup instructions when your order is ready. For new device setup, schedule a free online session with an Apple Specialist.",
+          "comparePickupOptionsLink": "<a href=\"https://www.apple.com/shop/shipping-pickup\" data-feature-name=\"Astro Link\" data-display-name=\"AOS: shop/shipping-pickup\" target=\"_blank\">Learn more about delivery <br />and pickup<span class=\"icon icon-after icon-external\"></span><span class=\"visuallyhidden\">(Opens in a new window)</span></a>",
+          "pickupOptions": [
+            {
+              "pickupOptionTitle": "In-Store",
+              "pickupOptionDescription": "Pick up your online order. You may be able to get setup help and shop for accessories.",
+              "index": 1
+            }
+          ]
+        },
+        "rank": 12
+      }
+    ],
+    "overlayInitiatedFromWarmStart": false,
+    "viewMoreHoursLinkText": "View more hours",
+    "storesCount": "12 stores found near 77056",
+    "little": false,
+    "location": "77056",
+    "notAvailableNearby": "Not available today at [X] nearest stores.",
+    "notAvailableNearOneStore": "Not available today at the nearest store.",
+    "warmDudeWithAPU": false,
+    "viewMoreHoursVoText": "(Opens in a new window)",
+    "availability": {
+      "isComingSoon": false
+    },
+    "viewDetailsText": "View details",
+    "availabilityStores": "R042,R085,R126,R130,R144,R151,R164,R216,R233,R316,R321,R746",
+    "legendLabelText": "Stores",
+    "filteredTopStore": false
+  }
+}

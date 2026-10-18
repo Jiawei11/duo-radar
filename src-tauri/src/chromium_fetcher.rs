@@ -130,7 +130,7 @@ fn chromium_profile_dir() -> PathBuf {
 pub(crate) fn app_profile_dir(name: &str) -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(std::env::temp_dir)
-        .join("apple-store-inventory-monitor")
+        .join("duo-radar")
         .join(name)
 }
 
@@ -4082,10 +4082,7 @@ pub(crate) mod tests {
     fn chromium使用应用专属持久资料目录() {
         let path = chromium_profile_dir();
         assert!(path.ends_with(CHROMIUM_PROFILE_DIR));
-        assert!(
-            path.to_string_lossy()
-                .contains("apple-store-inventory-monitor")
-        );
+        assert!(path.to_string_lossy().contains("duo-radar"));
     }
 
     #[cfg(unix)]
@@ -4258,6 +4255,79 @@ pub(crate) mod tests {
                 println!(
                     "round={round} store={store} name={} availability={:?}",
                     result.store_name, status.availability
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "Requires local Chrome/Edge and Apple US network"]
+    async fn live_us_texas_three_cities_two_rounds() {
+        let region = region_by_locale("en_US").unwrap();
+        let fetcher = AppleChromiumFetcher::new();
+        for round in 1..=2 {
+            for (store, zip) in [("R144", "75225"), ("R216", "78758"), ("R058", "77056")] {
+                let mut target = test_target("MG484LL/A");
+                target.locale = "en_US".into();
+                target.store_number = store.into();
+                target.pickup_location = Some(zip.into());
+                let result = fetcher
+                    .pickup(region, store, &[target], None)
+                    .await
+                    .unwrap_or_else(|error| panic!("round={round} store={store}: {error}"));
+                let status = result.parts.get("MG484LL/A").expect("US SKU returned");
+                assert_eq!(result.store_number, store);
+                assert!(!status.availability.is_unknown());
+                println!(
+                    "round={round} store={store} name={} status={:?} details={:?}",
+                    result.store_name, status.availability, status.pickup_details
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "Queries all eight Duo variants in three Texas cities using Chrome/Edge"]
+    async fn live_duo_texas_eight_variants() {
+        let region = region_by_locale("en_US").unwrap();
+        let catalog = apw_core::catalog::Catalog::new();
+        let products: Vec<_> = catalog
+            .products("en_US")
+            .unwrap()
+            .into_iter()
+            .filter(crate::duo::allowed)
+            .collect();
+        assert_eq!(products.len(), 8);
+        let fetcher = AppleChromiumFetcher::new();
+        for (store, zip) in [("R144", "75225"), ("R216", "78758"), ("R058", "77056")] {
+            let targets: Vec<_> = products
+                .iter()
+                .map(|product| {
+                    let mut target = test_target(&product.part_number);
+                    target.locale = "en_US".into();
+                    target.store_number = store.into();
+                    target.pickup_location = Some(zip.into());
+                    target
+                })
+                .collect();
+            let result = fetcher
+                .pickup(region, store, &targets, None)
+                .await
+                .expect("US Duo query succeeds");
+            for product in &products {
+                let status = result
+                    .parts
+                    .get(&product.part_number)
+                    .expect("each SKU returned");
+                assert!(
+                    !status.availability.is_failure(),
+                    "{store} {}: {:?}",
+                    product.part_number,
+                    status.availability
+                );
+                println!(
+                    "store={store} part={} status={:?} quote={:?}",
+                    product.part_number, status.availability, status.pickup_details
                 );
             }
         }

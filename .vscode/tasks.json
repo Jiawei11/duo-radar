@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Duo: 开发运行",
+      "type": "shell",
+      "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; pnpm tauri dev",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Duo: 构建 Windows exe",
+      "type": "shell",
+      "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; pnpm tauri build --bundles nsis",
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Duo: 德州三城真实查询测试",
+      "type": "shell",
+      "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; cargo test -p apple-store-inventory-monitor live_duo_texas_eight_variants -- --ignored --nocapture",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}

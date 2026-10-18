@@ -74,6 +74,7 @@ pub enum CatalogError {
 /// 用 `include_str!` 而不是运行时读文件：打包后那些相对路径根本不存在。
 /// 表要手写是因为 `include_str!` 的路径必须是字面量；漏了哪个地区由测试兜住。
 const EMBEDDED_PRODUCTS: &[(&str, &str)] = &[
+    ("en_US", include_str!("../data/products_en_US.json")),
     ("zh_CN", include_str!("../data/products_zh_CN.json")),
     ("zh_HK", include_str!("../data/products_zh_HK.json")),
     ("zh_TW", include_str!("../data/products_zh_TW.json")),
@@ -332,7 +333,7 @@ impl Catalog {
         region: &'static Region,
         http: &reqwest::Client,
     ) -> Result<usize, CatalogError> {
-        let page = crate::apple_catalog::fetch_store_list(http).await?;
+        let page = crate::apple_catalog::fetch_store_list(http, region).await?;
         let stores = parse_store_page(&page)?
             .remove(region.locale)
             .ok_or_else(|| CatalogError::PageSchema {
@@ -1044,7 +1045,7 @@ fn push_store(
     // stateName：日本若改用 city，界面会出现 Chiyoda-ku 这类区名。
     let address_city = raw.address.city.trim();
     let mut display_city = address_city;
-    if locale != "zh_CN" && has_states {
+    if locale != "zh_CN" && locale != "en_US" && has_states {
         let from_store = raw.address.state_name.trim();
         if !from_store.is_empty() {
             display_city = from_store;

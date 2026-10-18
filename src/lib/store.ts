@@ -82,7 +82,7 @@ export interface UiState {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  locale: "zh_CN",
+  locale: "en_US",
   targets: [],
   deliveryRegion: null,
   intervalSeconds: 30,
@@ -640,7 +640,7 @@ export async function checkForUpdate(opts?: { quiet?: boolean }): Promise<void> 
     const info = await invoke<UpdateInfo | null>("check_for_update");
     update({ update: info });
     if (!opts?.quiet) {
-      pushLog(info ? `发现新版本 ${info.version}。` : "已经是最新版本。");
+      pushLog(info ? `发现新版本 ${info.version}。` : "美国定制版：不使用上游自动更新。");
     }
   } catch (err) {
     // 检查更新失败不是故障，只是这次没查到。静默模式下连日志都不写，
@@ -686,7 +686,7 @@ export function dismissUpdate(): void {
 /** 自动更新不可用时，打开本项目的完整安装包下载页。 */
 export async function openReleasePage(): Promise<void> {
   try {
-    await openUrl("https://github.com/suversal/apple-store-inventory-monitor/releases/latest");
+    await openUrl("https://github.com/Jiawei11/duo-radar/releases/latest");
   } catch (err) {
     update({ updateError: `无法打开下载页：${String(err)}` });
   }
@@ -703,7 +703,7 @@ async function openCommunityPage(url: string, label: string): Promise<void> {
 /** 打开开源仓库主页，可从 Releases 下载最新版。 */
 export function openProjectPage(): Promise<void> {
   return openCommunityPage(
-    "https://github.com/suversal/apple-store-inventory-monitor",
+    "https://github.com/Jiawei11/duo-radar",
     "GitHub 项目页",
   );
 }

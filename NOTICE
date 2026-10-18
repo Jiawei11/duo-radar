@@ -2,6 +2,18 @@
 NOTICE — 来源、版权与修改声明
 ================================================================================
 
+Duo Radar 1.1.0（2026-10-17）：维护者 Jiawei11。由 OpenAI Codex / ChatGPT
+协助完成美国适配、Duo 8 配置专用界面、测试与 Windows 打包。直接基于
+suversal/apple-store-inventory-monitor 363601e，保留原作者及全部上游贡献历史。
+本版重写精简界面、移除中国大陆送货/自动结账/社交推广入口，使用独立品牌、
+图标和配置目录。全部派生代码继续采用 GPL-3.0-or-later，感谢 suversal、ENCHIGO、
+hteen 及原有贡献者。详见 README.md。
+
+本地美国版修改（2026-10-17）：基于 suversal/apple-store-inventory-monitor
+提交 363601e，加入美国地区、美国商品与门店目录、ZIP 查询、德州测试，使用独立
+配置和应用身份并禁用上游更新。详细修改与运行说明见 README.US.md。
+本修改版继续采用 GNU GPL v3 or later，保留下列全部来源声明。
+
 本项目 apple-store-inventory-monitor 直接基于下述项目继续开发：
 
     直接上游名称  Apple Pickup Watcher (apple-pickup-watcher)

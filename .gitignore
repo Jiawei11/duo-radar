@@ -24,6 +24,16 @@ checkout-login.json
 # 编辑器与系统
 .vscode/*
 !.vscode/extensions.json
+!.vscode/tasks.json
+/deliverables/
+/research/*
+/src-tauri/icons/android/
+/src-tauri/icons/ios/
+!/research/pickup-dallas.json
+!/research/pickup-austin.json
+!/research/pickup-houston.json
+!/research/duo-dallas.json
+!/research/texas-live-results.json
 .idea
 .DS_Store
 *.swp

@@ -49,7 +49,7 @@ const SELECTION: &str = r#"{
 #[test]
 fn 七个地区都能从内嵌数据读出商品与门店() {
     let catalog = Catalog::new();
-    assert_eq!(REGIONS.len(), 7);
+    assert_eq!(REGIONS.len(), 8);
 
     for region in REGIONS {
         let products = catalog

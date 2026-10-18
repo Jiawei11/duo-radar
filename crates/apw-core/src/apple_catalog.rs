@@ -373,13 +373,18 @@ async fn fetch_page_once(
 pub const STORE_LIST_URL: &str = "https://www.apple.com.cn/retail/storelist/";
 
 /// 取门店列表页 HTML。
-pub async fn fetch_store_list(http: &reqwest::Client) -> Result<Vec<u8>, ApiError> {
+pub async fn fetch_store_list(
+    http: &reqwest::Client,
+    requested_region: &'static Region,
+) -> Result<Vec<u8>, ApiError> {
     let region = crate::model::region_by_locale("zh_CN")
         .ok_or_else(|| ApiError::Transport("内置地区表缺少中国大陆".into()))?;
-    crate::apple::with_retry(MAX_RETRIES, || {
-        fetch_page_once(http, STORE_LIST_URL, region)
-    })
-    .await
+    let (url, region) = if requested_region.locale == "en_US" {
+        ("https://www.apple.com/retail/storelist/", requested_region)
+    } else {
+        (STORE_LIST_URL, region)
+    };
+    crate::apple::with_retry(MAX_RETRIES, || fetch_page_once(http, url, region)).await
 }
 
 /// 从 Next.js 页面中截出 `__NEXT_DATA__` 的 JSON 文本。

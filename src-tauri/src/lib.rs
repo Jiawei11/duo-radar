@@ -21,13 +21,13 @@ use serde::{Deserialize, Serialize};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
-use tauri_plugin_updater::UpdaterExt;
 
 mod browser_support;
 mod checkout;
 mod checkout_login;
 mod chromium_fetcher;
 mod clash;
+mod duo;
 mod route_pool;
 #[cfg(windows)]
 mod windows_chromium;
@@ -543,7 +543,14 @@ fn list_products(
     state: tauri::State<'_, AppState>,
     locale: String,
 ) -> Result<Vec<Product>, String> {
-    state.catalog.products(&locale).map_err(|e| e.to_string())
+    if locale != "en_US" {
+        return Ok(Vec::new());
+    }
+    state
+        .catalog
+        .products(&locale)
+        .map(|items| items.into_iter().filter(duo::allowed).collect())
+        .map_err(|e| e.to_string())
 }
 
 /// 一次目录刷新的结果。部分失败时已成功的部分照常生效。
@@ -699,6 +706,7 @@ async fn save_settings(
 ) -> Result<Settings, String> {
     let mut next = settings;
     next.normalize();
+    duo::restrict(&mut next, &state.catalog);
     state.catalog.hydrate_watch_targets(&mut next.targets);
     state.catalog.hydrate_store_targets(&mut next.targets);
     state.catalog.attach_pickup_locations(&mut next.targets);
@@ -796,6 +804,7 @@ async fn set_targets(
     let mut next = state.settings_snapshot();
     next.targets = targets;
     next.normalize();
+    duo::restrict(&mut next, &state.catalog);
     state.catalog.hydrate_watch_targets(&mut next.targets);
     state.catalog.hydrate_store_targets(&mut next.targets);
     state.catalog.attach_pickup_locations(&mut next.targets);
@@ -851,90 +860,15 @@ struct UpdateInfo {
 /// 抢购当口挂着的程序，自作主张地下载、替换、重启，正好会赶上最不该被打断的时刻。
 #[tauri::command]
 async fn check_for_update(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
-    let updater = app
-        .updater_builder()
-        .timeout(Duration::from_secs(300))
-        .build()
-        .map_err(|e| e.to_string())?;
-    match tokio::time::timeout(Duration::from_secs(20), updater.check())
-        .await
-        .map_err(|_| "检查更新超时，请稍后重试".to_string())?
-    {
-        Ok(Some(update)) => Ok(Some(UpdateInfo {
-            version: update.version.clone(),
-            current_version: update.current_version.clone(),
-            notes: update.body.clone(),
-        })),
-        Ok(None) => Ok(None),
-        // 检查更新失败不是错误状态，只是这次没查到 —— 网络不通、GitHub 抽风都
-        // 会走到这里，没必要弹给用户看，写进日志即可。
-        Err(err) => Err(err.to_string()),
-    }
+    let _ = app;
+    Ok(None)
 }
 
 /// 下载并安装更新。安装完成后需要重启应用才生效。
 #[tauri::command]
 async fn install_update(app: AppHandle) -> Result<(), String> {
-    let updater = app
-        .updater_builder()
-        .timeout(Duration::from_secs(300))
-        .build()
-        .map_err(|e| e.to_string())?;
-    let update = tokio::time::timeout(Duration::from_secs(20), updater.check())
-        .await
-        .map_err(|_| "检查更新超时，请稍后重试".to_string())?
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "已经是最新版本".to_string())?;
-
-    let handle = app.clone();
-    let finished = app.clone();
-    let mut downloaded = 0_u64;
-    let mut last_emit = std::time::Instant::now() - Duration::from_secs(1);
-    let _ = app.emit(
-        "watcher://update-progress",
-        serde_json::json!({
-            "phase": "downloading", "downloaded": 0, "total": null
-        }),
-    );
-    let bytes = update
-        .download(
-            move |chunk, total| {
-                // 插件回调给的是本次数据块大小，界面需要累计字节数。
-                downloaded = downloaded.saturating_add(chunk as u64);
-                if last_emit.elapsed() >= Duration::from_millis(100) || total == Some(downloaded) {
-                    let _ = handle.emit(
-                        "watcher://update-progress",
-                        serde_json::json!({
-                            "phase": "downloading", "downloaded": downloaded, "total": total
-                        }),
-                    );
-                    last_emit = std::time::Instant::now();
-                }
-            },
-            move || {
-                let _ = finished.emit(
-                    "watcher://update-progress",
-                    serde_json::json!({
-                        "phase": "verifying", "downloaded": 0, "total": null
-                    }),
-                );
-            },
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-    // download 完成签名验证后才允许安装，校验失败绝不进入此分支。
-    let _ = app.emit(
-        "watcher://update-progress",
-        serde_json::json!({
-            "phase": "installing", "downloaded": 0, "total": null
-        }),
-    );
-    tauri::async_runtime::spawn_blocking(move || update.install(bytes))
-        .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
+    let _ = app;
+    Err("美国定制版不使用上游自动更新，请使用本地构建安装包。".into())
 }
 
 /// 与库存目标共用目录信息，避免 Apple Watch 的表壳料号跳到不存在的详情页。
@@ -1489,7 +1423,7 @@ fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
                 tauri::Error::AssetNotFound("默认窗口图标缺失，无法建立托盘".into())
             })?,
         )
-        .tooltip("果到雷达")
+        .tooltip("Duo Radar")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
@@ -1606,7 +1540,6 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let mut notices = Vec::new();
             let (mut settings, store) = load_settings(&mut notices);
@@ -1614,9 +1547,10 @@ pub fn run() {
             let catalog = Catalog::with_cache_dir(
                 dirs::config_dir()
                     .unwrap_or_else(std::env::temp_dir)
-                    .join("apple-store-inventory-monitor")
+                    .join("duo-radar")
                     .join("catalog-cache"),
             );
+            duo::restrict(&mut settings, &catalog);
             let saved_targets = settings.targets.clone();
             catalog.hydrate_watch_targets(&mut settings.targets);
             catalog.hydrate_store_targets(&mut settings.targets);
