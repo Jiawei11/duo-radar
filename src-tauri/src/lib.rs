@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use apw_core::catalog::Catalog;
 use apw_core::config::{ClashSettings, MIN_INTERVAL_SECONDS, OpenOnHit, Settings, SettingsStore};
 use apw_core::model::{Category, Product, REGIONS, Store, Target, region_by_locale};
-use apw_core::notify::{Bark, Multi, Notification, Notifier, Sound};
+use apw_core::notify::{Notification, Notifier, Sound};
 use apw_core::watcher::{Event, TargetState, Watcher, WatcherConfig};
 use serde::{Deserialize, Serialize};
 use tauri::menu::{Menu, MenuItem};
@@ -23,6 +23,7 @@ use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
 
 mod browser_support;
+mod cart;
 mod checkout;
 mod checkout_login;
 mod chromium_fetcher;
@@ -881,27 +882,6 @@ fn target_purchase_url(app: &AppHandle, target: &Target) -> Option<String> {
     target.purchase_url(product.as_ref())
 }
 
-/// 按用户选择返回这个监控目标对应的跳转地址。
-fn target_open_url(app: &AppHandle, target: &Target, destination: OpenOnHit) -> Option<String> {
-    match destination {
-        OpenOnHit::None => None,
-        OpenOnHit::Bag => region_by_locale(&target.locale).map(|region| region.bag_url()),
-        OpenOnHit::EducationBag => {
-            region_by_locale(&target.locale).map(|region| region.education_bag_url())
-        }
-        OpenOnHit::Product => target_purchase_url(app, target),
-    }
-}
-
-fn destination_title(destination: OpenOnHit) -> &'static str {
-    match destination {
-        OpenOnHit::None => "",
-        OpenOnHit::Bag => "购物袋",
-        OpenOnHit::EducationBag => "教育商店购物袋",
-        OpenOnHit::Product => "商品页",
-    }
-}
-
 #[tauri::command]
 fn open_target_product(app: AppHandle, target: Target) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
@@ -911,104 +891,42 @@ fn open_target_product(app: AppHandle, target: Target) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
-/// 手动测试提醒和首个目标的跳转，便于提前验证实际操作链路。
+/// Manual sound test never opens or modifies a cart.
 #[tauri::command]
 async fn test_notify(app: AppHandle) -> Result<(), String> {
-    let settings = app.state::<AppState>().settings_snapshot();
-    let bark_url = settings.targets.first().map_or_else(
-        || settings.bark_url.as_str(),
-        |target| settings.bark_url_for(target),
-    );
-    if !settings.sound_enabled
-        && bark_url.trim().is_empty()
-        && settings.open_on_hit == OpenOnHit::None
-    {
-        return Err("请先开启提示音、页面跳转或配置 Bark，再测试提醒".into());
+    if !app.state::<AppState>().settings_snapshot().sound_enabled {
+        return Err("请先开启声音提醒".into());
     }
-    let mut notification = Notification::new(
-        "提醒测试（不代表有货）",
-        "请确认已开启的提醒是否收到；Apple 页面仍需自行结账",
-    );
-    if settings.open_on_hit == OpenOnHit::Product
-        && settings.targets.is_empty()
-        && !settings.sound_enabled
-        && bark_url.trim().is_empty()
-    {
-        return Err("请先添加监控目标，再测试商品页跳转".into());
-    }
-
-    let jump_url = match settings.open_on_hit {
-        OpenOnHit::None => None,
-        destination @ (OpenOnHit::Bag | OpenOnHit::EducationBag) => {
-            let locale = settings
-                .targets
-                .first()
-                .map_or(settings.locale.as_str(), |target| target.locale.as_str());
-            region_by_locale(locale).map(|region| {
-                if destination == OpenOnHit::EducationBag {
-                    region.education_bag_url()
-                } else {
-                    region.bag_url()
-                }
-            })
-        }
-        OpenOnHit::Product => settings
-            .targets
-            .first()
-            .and_then(|target| target_purchase_url(&app, target)),
-    };
-
-    if settings.open_on_hit != OpenOnHit::None
-        && jump_url.is_none()
-        && !settings.sound_enabled
-        && bark_url.trim().is_empty()
-    {
-        return Err(format!(
-            "无法生成{}跳转地址",
-            destination_title(settings.open_on_hit)
-        ));
-    }
-
-    if let Some(url) = jump_url {
-        notification = notification.with_url(url.clone());
-        use tauri_plugin_opener::OpenerExt;
-        app.opener()
-            .open_url(url, None::<&str>)
-            .map_err(|e| e.to_string())?;
-    }
-    dispatch_notification(&app, notification, bark_url)
+    dispatch_notification(&app, Notification::new("提示音测试", "不代表有货"), "")
         .await
         .map_err(|e| e.to_string())
 }
 
-/// 按用户设置发送提示音和 Bark 提醒。
+#[tauri::command]
+async fn test_cart(app: AppHandle, part_number: String) -> Result<String, String> {
+    prepare_cart(&app, &part_number).await
+}
+
+async fn prepare_cart(app: &AppHandle, part: &str) -> Result<String, String> {
+    let product = app
+        .state::<AppState>()
+        .catalog
+        .product_by_part("en_US", part)
+        .filter(duo::allowed)
+        .ok_or("不支持此商品")?;
+    app.state::<cart::CartRunner>().prepare(&product).await
+}
+
+/// This edition only sends local sound notifications.
 async fn dispatch_notification(
     app: &AppHandle,
     notification: Notification,
-    bark_url: &str,
+    _legacy_url: &str,
 ) -> Result<(), apw_core::notify::NotifyError> {
-    let settings = match app.try_state::<AppState>() {
-        Some(state) => state.settings_snapshot(),
-        None => return Ok(()),
-    };
-
-    let mut channels = Multi::new();
-    if settings.sound_enabled {
-        channels.push(Sound::embedded());
+    if app.state::<AppState>().settings_snapshot().sound_enabled {
+        Sound::embedded().notify(&notification).await?;
     }
-    if !bark_url.trim().is_empty() {
-        let http = app
-            .try_state::<AppState>()
-            .map(|s| s.http.clone())
-            .unwrap_or_default();
-        // Bark 每次现构造：地址是用户随时可改的设置项，缓存实例会在改完地址后
-        // 继续往旧地址推。共享的 http 客户端一并传进去，连接池仍然复用。
-        channels.push(Bark::new(bark_url.to_owned(), http));
-    }
-    if channels.is_empty() {
-        return Ok(());
-    }
-    channels.notify(&notification).await
+    Ok(())
 }
 
 fn in_stock_notification_body(target: &Target) -> String {
@@ -1332,77 +1250,25 @@ async fn pump_events(app: AppHandle, mut events: tokio::sync::mpsc::Receiver<Eve
                     }
                 });
             }
-            let destination_url = target_open_url(&app, target, settings.open_on_hit);
-            let bark_url = settings.bark_url_for(target).to_owned();
-            let has_product_bark = settings.product_bark_urls.contains_key(&target.part_number);
-            let mut notification = Notification::new("有货了", in_stock_notification_body(target));
-            if let Some(url) = &destination_url {
-                notification = notification.with_url(url.clone());
-            }
-
-            let mut opened_destination = None;
             if settings.open_on_hit != OpenOnHit::None {
-                use tauri_plugin_opener::OpenerExt;
-                match destination_url {
-                    Some(url) => match app.opener().open_url(url, None::<&str>) {
-                        Ok(()) => opened_destination = Some(settings.open_on_hit),
-                        Err(err) => {
-                            let _ = app.emit(
-                                NOTICE_CHANNEL,
-                                format!(
-                                    "自动打开{}失败：{err}",
-                                    destination_title(settings.open_on_hit)
-                                ),
-                            );
-                        }
-                    },
-                    None => {
-                        let _ = app.emit(
-                            NOTICE_CHANNEL,
-                            format!(
-                                "自动打开{}失败：无法生成跳转地址",
-                                destination_title(settings.open_on_hit)
-                            ),
-                        );
-                    }
-                }
+                let cart_app = app.clone();
+                let part = target.part_number.clone();
+                tauri::async_runtime::spawn(async move {
+                    let message = match prepare_cart(&cart_app, &part).await {
+                        Ok(message) => message,
+                        Err(error) => format!("加购未完成：{error}"),
+                    };
+                    let _ = cart_app.emit(NOTICE_CHANNEL, message);
+                });
             }
-
-            if let Err(err) = dispatch_notification(&app, notification, &bark_url).await {
-                // 提醒没发出去是遗憾，但绝不能让监控本身停下来。
-                let _ = app.emit(NOTICE_CHANNEL, format!("发送提醒时出错：{err}"));
-            } else {
-                let mut actions = Vec::new();
-                if settings.sound_enabled {
-                    actions.push("提示音");
-                }
-                if !bark_url.trim().is_empty() {
-                    actions.push(if has_product_bark {
-                        "Bark（型号专属）"
-                    } else {
-                        "Bark"
-                    });
-                }
-                if let Some(destination) = opened_destination {
-                    match destination {
-                        OpenOnHit::Bag => actions.push("已打开购物袋"),
-                        OpenOnHit::EducationBag => actions.push("已打开教育商店购物袋"),
-                        OpenOnHit::Product => actions.push("已打开商品页"),
-                        OpenOnHit::None => {}
-                    }
-                }
-                if actions.is_empty() {
-                    continue;
-                }
-                let _ = app.emit(
-                    NOTICE_CHANNEL,
-                    format!(
-                        "到货提醒已执行：{} {}（{}）",
-                        target.store_title,
-                        target.product_name,
-                        actions.join("、")
-                    ),
-                );
+            if let Err(err) = dispatch_notification(
+                &app,
+                Notification::new("有货了", in_stock_notification_body(target)),
+                "",
+            )
+            .await
+            {
+                let _ = app.emit(NOTICE_CHANNEL, format!("声音提醒失败：{err}"));
             }
         }
     }
@@ -1593,6 +1459,7 @@ pub fn run() {
                 });
             }
 
+            app.manage(cart::CartRunner::default());
             app.manage(AppState {
                 watcher,
                 fetcher,
@@ -1653,6 +1520,7 @@ pub fn run() {
             retry_watching_now,
             is_running,
             test_notify,
+            test_cart,
             open_checkout_browser,
             test_checkout,
             checkout_login::checkout_login_status,

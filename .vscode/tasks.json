@@ -17,6 +17,20 @@
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
+      "label": "Duo: 全美代表门店真实查询测试",
+      "type": "shell",
+      "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; cargo test -p apple-store-inventory-monitor live_us_nationwide -- --ignored --nocapture",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Duo: iPhone 17 真实加购测试（不结账）",
+      "type": "shell",
+      "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; cargo test -p apple-store-inventory-monitor live_us_cart_and_repeat -- --ignored --nocapture",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
       "label": "Duo: 德州三城真实查询测试",
       "type": "shell",
       "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; cargo test -p apple-store-inventory-monitor live_duo_texas_eight_variants -- --ignored --nocapture",

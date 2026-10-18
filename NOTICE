@@ -2,6 +2,10 @@
 NOTICE — 来源、版权与修改声明
 ================================================================================
 
+Duo Radar 1.2.0（2026-10-17）：维护者 Jiawei11。由 OpenAI Codex / ChatGPT
+协助加入全美代表门店验证、暂停并清空列表、移除 Bark、美国站加购与购物袋
+SKU/数量核对，以及 iPhone 17 单配置测试。保留下列全部来源与许可声明。
+
 Duo Radar 1.1.0（2026-10-17）：维护者 Jiawei11。由 OpenAI Codex / ChatGPT
 协助完成美国适配、Duo 8 配置专用界面、测试与 Windows 打包。直接基于
 suversal/apple-store-inventory-monitor 363601e，保留原作者及全部上游贡献历史。

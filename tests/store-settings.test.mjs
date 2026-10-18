@@ -55,6 +55,7 @@ async function setup() {
     if (command === "set_targets") persisted.targets = args.targets;
     if (command === "set_targets") return [];
     if (command === "set_interval") return persisted.intervalSeconds;
+    if (command === "is_running") return false;
     return { ...persisted };
   };
   await store.saveSettings(defaults);
@@ -66,6 +67,26 @@ async function setup() {
   };
 }
 const tick = () => new Promise((resolve) => setImmediate(resolve));
+
+test("clear all pauses monitoring before persisting an empty target list", async () => {
+  const ctx = await setup();
+  const target = {locale:"en_US",storeNumber:"R144",storeTitle:"NorthPark",partNumber:"MG484LL/A",productName:"iPhone 17"};
+  await ctx.store.setTargets([target]);
+  ctx.calls.length = 0;
+  assert.equal(await ctx.store.clearTargets(), true);
+  assert.deepEqual(ctx.calls, ["stop_watching", "is_running", "set_targets"]);
+  assert.deepEqual(ctx.persisted().targets, []);
+  assert.deepEqual(ctx.store.watcherStore.getSnapshot().rows, []);
+});
+
+test("clear all leaves saved targets intact if pause fails", async () => {
+  const ctx = await setup();
+  const target = {locale:"en_US",storeNumber:"R144",storeTitle:"NorthPark",partNumber:"MG484LL/A",productName:"iPhone 17"};
+  await ctx.store.setTargets([target]);
+  invoke = async () => { throw new Error("pause unavailable"); };
+  assert.equal(await ctx.store.clearTargets(), false);
+  assert.deepEqual(ctx.persisted().targets, [target]);
+});
 
 test("送货地区固定读取中国大陆官网且不跟随当前监控地区", async () => {
   let received;

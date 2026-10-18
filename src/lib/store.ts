@@ -418,6 +418,21 @@ export function setTargets(targets: Target[]): Promise<boolean> {
   return enqueueSettingsWrite(() => writeTargets(targets));
 }
 
+/** Pause first, then clear using the same queue as individual target edits. */
+export function clearTargets(): Promise<boolean> {
+  return enqueueSettingsWrite(async () => {
+    try {
+      await invoke("stop_watching");
+      if (await invoke<boolean>("is_running")) throw new Error("监控仍在运行，请重试暂停");
+      update({ running: false });
+      return await writeTargets([]);
+    } catch (error) {
+      pushLog(`清空列表失败：${String(error)}`);
+      return false;
+    }
+  });
+}
+
 /**
  * 删除单条监控。
  *
@@ -605,21 +620,7 @@ export async function testNotify(): Promise<void> {
   try {
     await settingsWrite;
     await invoke("test_notify");
-    const jump =
-      state.settings.openOnHit === "bag"
-        ? "，并打开购物袋"
-        : state.settings.openOnHit === "education_bag"
-          ? "，并打开教育商店购物袋"
-          : state.settings.openOnHit === "product" && state.settings.targets.length > 0
-            ? "，并打开第一个监控目标的商品详情"
-            : "";
-    const firstTarget = state.settings.targets[0];
-    const bark = firstTarget && state.settings.productBarkUrls[firstTarget.partNumber]
-      ? "，并向第一个监控型号的专属 Bark 推送"
-      : state.settings.barkUrl
-        ? "，并向默认 Bark 推送"
-        : "";
-    pushLog(`已执行测试提醒${bark}${jump}（不代表有货）。`);
+    pushLog("已执行提示音测试（不代表有货）。");
   } catch (err) {
     pushLog(`测试提醒失败：${String(err)}`);
   }

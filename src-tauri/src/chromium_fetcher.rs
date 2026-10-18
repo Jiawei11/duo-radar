@@ -4287,6 +4287,32 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
+    #[ignore = "Queries representative US stores outside Texas"]
+    async fn live_us_nationwide() {
+        let profile = tempfile::tempdir().unwrap();
+        let mut fetcher = AppleChromiumFetcher::new();
+        fetcher.profile_dir = profile.path().to_path_buf();
+        let region = region_by_locale("en_US").unwrap();
+        for (store, zip) in [("R095", "10153"), ("R075", "94108"), ("R050", "90036")] {
+            let mut target = test_target("MG484LL/A");
+            target.locale = "en_US".into();
+            target.store_number = store.into();
+            target.pickup_location = Some(zip.into());
+            let result = fetcher
+                .pickup(region, store, &[target], None)
+                .await
+                .expect("US query succeeds");
+            assert_eq!(result.store_number, store);
+            let status = &result.parts["MG484LL/A"];
+            assert!(!status.availability.is_failure());
+            println!(
+                "store={store} name={} status={:?}",
+                result.store_name, status.availability
+            );
+        }
+    }
+
+    #[tokio::test]
     #[ignore = "Queries all eight Duo variants in three Texas cities using Chrome/Edge"]
     async fn live_duo_texas_eight_variants() {
         let region = region_by_locale("en_US").unwrap();
@@ -4295,7 +4321,7 @@ pub(crate) mod tests {
             .products("en_US")
             .unwrap()
             .into_iter()
-            .filter(crate::duo::allowed)
+            .filter(|p| p.family == "iphoneduo" && crate::duo::allowed(p))
             .collect();
         assert_eq!(products.len(), 8);
         let fetcher = AppleChromiumFetcher::new();

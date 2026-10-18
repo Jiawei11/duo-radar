@@ -2,7 +2,7 @@
 
 **Jiawei 的 iPhone Duo 美国门店取货监控。**
 
-只关注你要买的 8 个配置：**星光白 / 夜空色 × 256GB / 512GB / 1TB / 2TB**。选好美国 Apple Store，交给电脑定时查询，有货后用声音或 Bark 提醒。
+只关注你要买的 8 个配置：**星光白 / 夜空色 × 256GB / 512GB / 1TB / 2TB**。选好美国 Apple Store，交给电脑定时查询，有货后用声音提醒，并可自动加购一台后打开购物袋。
 
 [下载 Windows 版](https://github.com/Jiawei11/duo-radar/releases/latest) · [反馈问题](https://github.com/Jiawei11/duo-radar/issues)
 
@@ -10,29 +10,29 @@
 
 ## 开始使用
 
-1. 在 Releases 下载 `DuoRadar-1.1.0-setup.exe` 安装，或使用 `DuoRadar.exe` 直接运行。
+1. 在 Releases 下载 `DuoRadar-1.2.0-setup.exe` 安装，或使用 `DuoRadar.exe` 直接运行。
 2. 点击 Dallas、Austin、Houston 快捷按钮，或搜索其他美国门店。
 3. 在两行配置按钮中选择颜色与容量，点击“添加监控”，再“开始监控”。
-4. 按需开启声音、填写 Bark 手机推送地址，先测试提醒。
+4. 按需开启声音和“到货后加购并打开购物袋”。Duo 下方提供 iPhone 17 雾蓝色 256GB 测试配置与独立加购测试按钮。
 
 运行环境：Windows 10/11 x64，已安装 Chrome 或 Edge。电脑休眠、关机或彻底退出后不会查询；关闭窗口会收进托盘。
 
 ## 精简到需要的功能
 
-- 仅美国、仅 iPhone Duo，8 个颜色容量组合，支持多选。
+- 全美国 Apple Store，iPhone Duo 的 8 个颜色容量组合，另有一个 iPhone 17 测试配置，支持多选。
 - 达拉斯、奥斯汀、休斯顿及周边 14 家店快捷选择，亦可搜索其他美国门店。
-- 默认每轮结束后 30 秒再查；支持声音、Bark、打开 Apple 商品页或购物袋。
+- 默认每轮结束后 30 秒再查；支持声音、到货后加购并打开购物袋；列表支持一键清空（先暂停监控）。
 - 有货、无货、待开放取货、查询失败分开显示。403 / 541 / 429 和网络错误不会伪装成无货。
 - 无中国大陆送货地址、无其他品类选择、无自动结账入口、无原作者社交推广。
 - 设置与专属查询浏览器保存在 `%APPDATA%\duo-radar\`；不读取日常浏览器资料。
 
-这是查询和提醒工具，不预留库存、不下单、不付款。最终取货资格和库存以 Apple 官网结账结果为准。Bark 地址含设备凭证，请勿贴进公开 Issue。
+这是查询和提醒工具，不预留库存、不下单、不付款。最终取货资格和库存以 Apple 官网结账结果为准。加购使用独立浏览器资料，不读取日常购物袋；同款数量为 1 时复用，不重复添加。取货门店仍需在 Apple 页面确认。
 
 ## 查询方式与验证
 
 Rust 后台通过独立 Chrome/Edge 会话访问 Apple 美国站的公开取货接口，使用美国商品 SKU 和门店 ZIP 查询，并按门店编号精确匹配。数据解析、请求间隔、错误状态保留在后台处理。
 
-Windows 本机已验证 Dallas NorthPark Center、Austin Domain NORTHSIDE、Houston Galleria 的浏览器查询。iPhone Duo 的 8 个配置在测试时返回“10.24 再查看取货情况”，界面显示“待开放取货”，不会触发有货提醒。该记录不代表当前库存。
+Windows 本机已验证 Dallas NorthPark Center、Austin Domain NORTHSIDE、Houston Galleria，以及纽约 Fifth Avenue、旧金山 Union Square、洛杉矶 The Grove 的浏览器查询。这验证了跨州查询路径，不代表已逐一测试所有门店。iPhone Duo 的 8 个配置在测试时返回“10.24 再查看取货情况”，界面显示“待开放取货”，不会触发有货提醒。该记录不代表当前库存。
 
 ## 从源码运行
 
@@ -52,13 +52,16 @@ cargo test --workspace --lib --tests
 pnpm tauri build --bundles nsis
 ```
 
-手动验证三城 × 8 个 Duo 配置，仅查询，不购买：
+手动验证全美代表门店和三城 × 8 个 Duo 配置，仅查询，不购买：
 
 ```powershell
+cargo test -p apple-store-inventory-monitor live_us_nationwide -- --ignored --nocapture
 cargo test -p apple-store-inventory-monitor live_duo_texas_eight_variants -- --ignored --nocapture
 ```
 
 构建产物位于 `target/release/` 和 `target/release/bundle/nsis/`。VS Code 的“运行任务”也提供开发、构建和真实查询测试入口。
+
+加购流程通过 Apple 商品页选择不折抵、全款、稍后连接运营商、不加 AppleCare，再添加购物袋并核对 SKU 与数量。不会点击结账或付款。Duo 尚未开放取货时不会触发加购；当前可用的 iPhone 17 测试配置用于验证这条链路。
 
 ## S/O · Contributors
 
