@@ -6,6 +6,8 @@
 
 [下载 Windows 版](https://github.com/Jiawei11/duo-radar/releases/latest) · [反馈问题](https://github.com/Jiawei11/duo-radar/issues)
 
+![Duo Radar Windows 界面](docs/duo-radar.png)
+
 ## 开始使用
 
 1. 在 Releases 下载 `DuoRadar-1.1.0-setup.exe` 安装，或使用 `DuoRadar.exe` 直接运行。
