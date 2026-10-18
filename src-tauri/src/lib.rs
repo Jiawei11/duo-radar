@@ -535,8 +535,39 @@ async fn list_watch_band_sizes(
 }
 
 #[tauri::command]
-fn list_stores(state: tauri::State<'_, AppState>, locale: String) -> Result<Vec<Store>, String> {
-    state.catalog.stores(&locale).map_err(|e| e.to_string())
+fn list_stores(
+    state: tauri::State<'_, AppState>,
+    locale: String,
+) -> Result<Vec<StoreLocationDto>, String> {
+    state
+        .catalog
+        .stores(&locale)
+        .map(|stores| stores.into_iter().map(StoreLocationDto::from).collect())
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct StoreLocationDto {
+    number: String,
+    name: String,
+    title: String,
+    city: String,
+    state: String,
+    postal_code: String,
+}
+
+impl From<Store> for StoreLocationDto {
+    fn from(store: Store) -> Self {
+        Self {
+            number: store.number,
+            name: store.name,
+            title: store.title,
+            city: store.city,
+            state: store.state,
+            postal_code: store.postal_code,
+        }
+    }
 }
 
 #[tauri::command]

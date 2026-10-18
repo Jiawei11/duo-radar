@@ -119,6 +119,9 @@ export interface Store {
   number: string;
   name: string;
   title: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
 }
 
 /** 检测到有货时自动打开的页面，与 Rust 侧 `OpenOnHit` 一一对应。 */
