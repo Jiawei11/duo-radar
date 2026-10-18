@@ -3,3 +3,5 @@
 .duo-test-product{margin-top:24px;padding-top:20px;border-top:1px solid #252a35}.duo-test-product button{padding:10px 16px;margin:0 10px 8px 0;border:1px solid #303745;border-radius:10px}.duo-test-product .selected{background:#304e84;border-color:#759bef}.duo-test-product p{font-size:13px;color:#a9bbd9;max-width:640px}.duo-actions>button{font-size:13px}
 
 .duo-store-location{display:flex;flex-direction:column;gap:3px;margin-top:6px;color:var(--muted-foreground);font-size:11px;user-select:text}.duo-store-location span{user-select:text}
+
+.duo-cart-button{padding:6px 12px;border:1px solid var(--primary);border-radius:7px;color:var(--primary);white-space:nowrap}.duo-cart-button:disabled{opacity:.5}.duo-cart-result{font-size:11px;line-height:1.6;min-width:135px;max-width:210px;margin:6px 0;color:var(--muted-foreground)}

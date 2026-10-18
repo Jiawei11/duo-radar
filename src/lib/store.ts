@@ -89,7 +89,7 @@ const DEFAULT_SETTINGS: Settings = {
   barkUrl: "",
   productBarkUrls: {},
   soundEnabled: true,
-  openOnHit: "bag",
+  openOnHit: "none",
   stopOnHit: false,
   network: {
     mode: "system",

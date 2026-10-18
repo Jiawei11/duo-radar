@@ -18,11 +18,7 @@ pub fn restrict(settings: &mut Settings, catalog: &Catalog) {
     settings.checkout.place_order = false;
     settings.bark_url.clear();
     settings.product_bark_urls.clear();
-    settings.open_on_hit = if settings.open_on_hit == apw_core::config::OpenOnHit::None {
-        apw_core::config::OpenOnHit::None
-    } else {
-        apw_core::config::OpenOnHit::Bag
-    };
+    settings.open_on_hit = apw_core::config::OpenOnHit::None;
     let products = catalog.products("en_US").unwrap_or_default();
     settings.targets.retain(|t| {
         t.locale == "en_US"
@@ -55,9 +51,11 @@ mod tests {
         }
         let mut settings = Settings::default();
         settings.checkout.enabled = true;
+        settings.open_on_hit = apw_core::config::OpenOnHit::Bag;
         settings.bark_url = "https://example.invalid/old-key".into();
         restrict(&mut settings, &catalog);
         assert!(!settings.checkout.enabled);
+        assert_eq!(settings.open_on_hit, apw_core::config::OpenOnHit::None);
         assert!(settings.delivery_region.is_none());
         assert!(settings.bark_url.is_empty());
         assert_eq!(settings.locale, "en_US");

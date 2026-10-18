@@ -24,7 +24,7 @@
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
-      "label": "Duo: iPhone 17 真实加购测试（不结账）",
+      "label": "Duo: iPhone 17 游客取货 ZIP 测试（不下单）",
       "type": "shell",
       "command": "$env:PATH = \"$env:USERPROFILE\\.cargo\\bin;\" + $env:PATH; cargo test -p apple-store-inventory-monitor live_us_cart_and_repeat -- --ignored --nocapture",
       "problemMatcher": [],

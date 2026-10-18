@@ -1,4 +1,4 @@
-// Only product selection, Add to Bag and Review Bag are allowed here. Never checkout.
+// Product selection and bag verification only; guest pickup is in cart_pickup.js.
 ((expected, allowAdd) => {
   if (location.protocol !== 'https:' || location.hostname !== 'www.apple.com') return {state:'wait'};
   const text = (document.body?.innerText || '').replace(/\s+/g, ' ');
@@ -29,15 +29,19 @@
     if (!el.checked) { el.click(); return true; }
     return false;
   };
-  if (choose('input[name="tradeupinline"][value="noTradeIn"]')) return {state:'select'};
-  if (choose('input[name="purchase_option_group"][value="fullprice"]')) return {state:'select'};
-  if (choose('input[name="carrierModel"][value="UNLOCKED/US"]')) return {state:'select'};
+  const name = document.querySelector('[data-autom="summary-productName"]')?.textContent.replace(/\s+/g, ' ').trim();
+  const family = expected.title.replace(/\s(?:256GB|512GB|1TB|2TB).*/, '');
+  if (name && !name.startsWith(family+' ')) return {state:'conflict',detail:'Apple 页面型号与该监控不符，请手动检查。'};
+  if (name && choose(`input[name="dimensionColor"][value="${expected.color}"]`)) return {state:'select',field:'color'};
+  if (name && choose(`input[name="dimensionCapacity"][value="${expected.capacity}"]`)) return {state:'select',field:'capacity'};
+  if (choose('input[name="tradeupinline"][value="noTradeIn"]')) return {state:'select',field:'trade'};
+  if (choose('input[name="purchase_option_group"][value="fullprice"]')) return {state:'select',field:'fullprice'};
+  if (choose('input[name="carrierModel"][value="UNLOCKED/US"]')) return {state:'select',field:'carrier'};
   const noCareLabel = [...document.querySelectorAll('label')].find(el => /No AppleCare coverage/.test(el.textContent));
   const noCare = noCareLabel && (noCareLabel.control || noCareLabel.querySelector('input'));
-  if (noCare && !noCare.checked && !noCare.disabled) { noCare.click(); return {state:'select'}; }
+  if (noCare && !noCare.checked && !noCare.disabled) { noCare.click(); return {state:'select',field:'care'}; }
   const color = document.querySelector('input[name="dimensionColor"]:checked')?.value;
   const capacity = document.querySelector('input[name="dimensionCapacity"]:checked')?.value;
-  const name = document.querySelector('[data-autom="summary-productName"]')?.textContent.replace(/\s+/g, ' ').trim();
   const selected = name === expected.title && color === expected.color && capacity === expected.capacity &&
     document.querySelector('input[name="tradeupinline"][value="noTradeIn"]')?.checked &&
     document.querySelector('input[name="purchase_option_group"][value="fullprice"]')?.checked &&

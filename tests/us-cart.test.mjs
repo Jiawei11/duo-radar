@@ -38,3 +38,21 @@ test('US bag reuses exact SKU only at quantity one; loading is not an empty bag'
   document.body.innerText='Your bag is empty.';
   assert.equal(run(document,'/shop/bag').state,'empty');
 });
+
+test('a redirected capacity must be corrected before Add, while another product family is rejected',()=>{
+  let capacity='512gb',additions=0;
+  const ready={checked:true};
+  const capacityChoice={get checked(){return capacity==='256gb';},click(){capacity='256gb';}};
+  const document={body:{innerText:''},querySelector(selector){
+    if(selector==='[data-autom="summary-productName"]') return {textContent:capacity==='256gb'?expected.title:'iPhone 17 512GB Mist Blue'};
+    if(selector==='input[name="dimensionCapacity"][value="256gb"]') return capacityChoice;
+    if(selector==='input[name="dimensionCapacity"]:checked') return {value:capacity};
+    if(selector==='input[name="dimensionColor"]:checked') return {value:'mistblue'};
+    if(selector==='button[data-autom="add-to-cart"]') return {getClientRects:()=>[{}],click:()=>additions++};
+    if(selector.startsWith('input[')) return ready;
+    return null;
+  },querySelectorAll:()=>[{textContent:'No AppleCare coverage',control:ready}]};
+  assert.equal(run(document).field,'capacity');assert.equal(additions,0);
+  assert.equal(run(document).state,'added');assert.equal(additions,1);
+  run(document,undefined,false);assert.equal(additions,1);
+});

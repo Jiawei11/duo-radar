@@ -13,7 +13,7 @@ use std::sync::{Mutex as StdMutex, OnceLock, RwLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use apw_core::catalog::Catalog;
-use apw_core::config::{ClashSettings, MIN_INTERVAL_SECONDS, OpenOnHit, Settings, SettingsStore};
+use apw_core::config::{ClashSettings, MIN_INTERVAL_SECONDS, Settings, SettingsStore};
 use apw_core::model::{Category, Product, REGIONS, Store, Target, region_by_locale};
 use apw_core::notify::{Notification, Notifier, Sound};
 use apw_core::watcher::{Event, TargetState, Watcher, WatcherConfig};
@@ -934,18 +934,26 @@ async fn test_notify(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn test_cart(app: AppHandle, part_number: String) -> Result<String, String> {
-    prepare_cart(&app, &part_number).await
-}
-
-async fn prepare_cart(app: &AppHandle, part: &str) -> Result<String, String> {
-    let product = app
-        .state::<AppState>()
+async fn add_target_to_cart(app: AppHandle, target: Target) -> Result<String, String> {
+    if target.locale != "en_US" {
+        return Err("仅支持美国门店".into());
+    }
+    let state = app.state::<AppState>();
+    let product = state
         .catalog
-        .product_by_part("en_US", part)
+        .product_by_part("en_US", &target.part_number)
         .filter(duo::allowed)
-        .ok_or("不支持此商品")?;
-    app.state::<cart::CartRunner>().prepare(&product).await
+        .ok_or("不支持此型号")?;
+    let store = state
+        .catalog
+        .stores("en_US")
+        .map_err(|e| e.to_string())?
+        .into_iter()
+        .find(|s| s.number == target.store_number)
+        .ok_or("未找到对应门店")?;
+    app.state::<cart::CartRunner>()
+        .prepare(&product, &store)
+        .await
 }
 
 /// This edition only sends local sound notifications.
@@ -1281,17 +1289,6 @@ async fn pump_events(app: AppHandle, mut events: tokio::sync::mpsc::Receiver<Eve
                     }
                 });
             }
-            if settings.open_on_hit != OpenOnHit::None {
-                let cart_app = app.clone();
-                let part = target.part_number.clone();
-                tauri::async_runtime::spawn(async move {
-                    let message = match prepare_cart(&cart_app, &part).await {
-                        Ok(message) => message,
-                        Err(error) => format!("加购未完成：{error}"),
-                    };
-                    let _ = cart_app.emit(NOTICE_CHANNEL, message);
-                });
-            }
             if let Err(err) = dispatch_notification(
                 &app,
                 Notification::new("有货了", in_stock_notification_body(target)),
@@ -1551,7 +1548,7 @@ pub fn run() {
             retry_watching_now,
             is_running,
             test_notify,
-            test_cart,
+            add_target_to_cart,
             open_checkout_browser,
             test_checkout,
             checkout_login::checkout_login_status,
