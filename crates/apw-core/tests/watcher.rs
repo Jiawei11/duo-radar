@@ -185,6 +185,149 @@ fn count_in_stock(events: &[Event]) -> usize {
         .count()
 }
 
+#[tokio::test]
+async fn fifty_six_targets_use_four_concurrent_store_batches() {
+    let mut fake =
+        FakeFetcher::new(|_, store, parts| Ok(ok_response(store, parts, Availability::OutOfStock)));
+    fake.delay = Duration::from_millis(100);
+    let (watcher, mut events) = Watcher::spawn(
+        fake.clone(),
+        WatcherConfig {
+            interval: Duration::from_secs(60),
+            ..fast_config()
+        },
+    );
+    let mut targets = Vec::new();
+    for store in 0..14 {
+        for part in 0..4 {
+            targets.push(target(&format!("R{store:03}"), &format!("P{part}")));
+        }
+    }
+    watcher.set_targets(targets).await;
+    let start = std::time::Instant::now();
+    watcher.start().await;
+    let results = wait_cycle(&mut events).await;
+    assert_eq!(fake.call_count(), 14);
+    assert_eq!(fake.peak_in_flight(), 4);
+    assert!(
+        results
+            .iter()
+            .any(|e| matches!(e,Event::CycleComplete{snapshot,..} if snapshot.len()==56))
+    );
+    eprintln!(
+        "Synthetic 14-store/56-target cycle: {} ms, peak concurrency {}",
+        start.elapsed().as_millis(),
+        fake.peak_in_flight()
+    );
+    watcher.stop().await;
+}
+
+#[derive(Clone)]
+struct StreamingFetcher {
+    release: Arc<tokio::sync::Notify>,
+}
+impl Fetcher for StreamingFetcher {
+    async fn pickup_message(
+        &self,
+        _region: &'static Region,
+        store: &str,
+        targets: &[Target],
+        _delivery: Option<&DeliveryRegion>,
+    ) -> Result<StoreAvailability, ApiError> {
+        if store == "slow" {
+            self.release.notified().await;
+        }
+        Ok(ok_response(
+            store,
+            &targets
+                .iter()
+                .map(|t| t.part_number.clone())
+                .collect::<Vec<_>>(),
+            Availability::InStock,
+        ))
+    }
+}
+
+#[tokio::test]
+async fn fast_store_notifies_before_slow_store_and_does_not_notify_twice() {
+    let release = Arc::new(tokio::sync::Notify::new());
+    let (watcher, mut events) = Watcher::spawn(
+        StreamingFetcher {
+            release: release.clone(),
+        },
+        WatcherConfig {
+            interval: Duration::from_secs(60),
+            ..fast_config()
+        },
+    );
+    watcher
+        .set_targets(vec![target("fast", "A"), target("slow", "B")])
+        .await;
+    watcher.start().await;
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            match events.recv().await.unwrap() {
+                Event::InStock { state } => {
+                    assert_eq!(state.target.store_number, "fast");
+                    break;
+                }
+                Event::CycleComplete { .. } => {
+                    panic!("Cycle finished while the slow store is blocked")
+                }
+                _ => {}
+            }
+        }
+    })
+    .await
+    .expect("Fast store must notify while slow store is blocked");
+    let snapshot = watcher.snapshot().await;
+    assert!(
+        snapshot
+            .iter()
+            .find(|s| s.target.store_number == "fast")
+            .unwrap()
+            .availability
+            .is_in_stock()
+    );
+    release.notify_one();
+    let rest = wait_cycle(&mut events).await;
+    assert_eq!(
+        count_in_stock(&rest),
+        1,
+        "Only the slow store should notify now"
+    );
+    watcher.stop().await;
+}
+
+#[tokio::test]
+async fn stopping_after_partial_result_cancels_remaining_notifications() {
+    let release = Arc::new(tokio::sync::Notify::new());
+    let (watcher, mut events) = Watcher::spawn(
+        StreamingFetcher {
+            release: release.clone(),
+        },
+        fast_config(),
+    );
+    watcher
+        .set_targets(vec![target("fast", "A"), target("slow", "B")])
+        .await;
+    watcher.start().await;
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while !matches!(events.recv().await, Some(Event::InStock { .. })) {}
+    })
+    .await
+    .unwrap();
+    watcher.stop().await;
+    release.notify_one();
+    tokio::time::sleep(Duration::from_millis(40)).await;
+    while let Ok(event) = events.try_recv() {
+        assert!(!matches!(
+            event,
+            Event::InStock { .. } | Event::CycleComplete { .. }
+        ));
+    }
+}
+
 #[derive(Clone)]
 struct ProtectedFetcher {
     calls: Arc<AtomicUsize>,

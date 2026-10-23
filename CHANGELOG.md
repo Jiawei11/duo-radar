@@ -1,5 +1,20 @@
 # Changelog / 更新记录
 
+## 1.4.3 · Proxy support and concurrent queries / 代理支持与并发查询
+
+- Run up to four store batches concurrently using independent proxy locks. Reuse up to 32 proxy sessions across cycles, covering the 25-proxy setup without repeated eviction.
+  使用独立代理锁，最多四个门店批次并发；跨轮次复用最多 32 个代理会话，25 条代理不再反复淘汰重启。
+- Publish each completed batch and stock notification immediately. Reconcile the final snapshot without duplicate notifications or row logs; cancelling monitoring stops remaining queries.
+  每批完成立即更新并提醒，整轮结束校准快照，不重复提醒或逐项日志；暂停监控会取消剩余查询。
+
+
+- Add a Proxy settings page, multiline import, per-row tests and a bounded Test all queue.
+  新增 Proxy 设置页、多行导入、单条测试和有限并发的全部测试。
+- Rotate inventory query batches across every imported HTTP proxy, continuing between cycles. Keep isolated Chromium sessions resident for reuse.
+  库存查询批次跨轮次轮询全部 HTTP 代理，保留隔离的 Chromium 会话供后续复用。
+- Store credentials with Windows user-scoped DPAPI encryption; authenticate through a local HTTPS tunnel relay. Cart connections are unchanged.
+  凭据使用 Windows 当前用户 DPAPI 加密保存，通过本地 HTTPS 隧道转发认证；加购连接方式不变。
+
 ## 1.4.0 · English and Chinese / 中英双语
 
 - Add a persistent English / 中文 switch, defaulting to English for new users.

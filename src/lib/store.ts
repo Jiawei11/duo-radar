@@ -186,13 +186,17 @@ function formatElapsed(ms: number): string {
   return `${(ms / 1_000).toFixed(1)} 秒`;
 }
 
+let activeCycle = 0;
+const streamedRows = new Set<string>();
 function applyEvent(event: WatcherEvent): void {
   switch (event.type) {
     case "stateChanged": {
-      // 列表本身以 cycleComplete 带来的快照为准，不拿这条事件去增量改 ——
-      // 它是可丢弃的，用它做增量会让界面和引擎慢慢对不上。
-      // 每轮逐项日志统一由 CycleComplete 的完整快照生成，避免首轮状态变化事件
-      // 与轮次日志重复，后续库存不变时也仍能保持完全相同的展示格式。
+      const key = targetKey(event.state.target);
+      if (!state.rows.some(row => targetKey(row.target) === key)) break;
+      const previousFailure = describeBrowserFailure(state.rows);
+      // Publish completed batches immediately. CycleComplete still reconciles the full snapshot.
+      update({ rows: state.rows.map(row => targetKey(row.target) === targetKey(event.state.target) ? event.state : row) });
+      if (activeCycle > 0) { pushLogs(describeCycleRows(activeCycle, [event.state], previousFailure)); streamedRows.add(key); }
       break;
     }
 
@@ -201,6 +205,8 @@ function applyEvent(event: WatcherEvent): void {
       break;
 
     case "cycleStarted":
+      activeCycle = event.cycle;
+      streamedRows.clear();
       update({ nextCheckAtMs: null, cooling: false });
       pushLog(
         `第 ${event.cycle} 轮开始查询：${event.storeCount} 家门店、${event.targetCount} 项监控。${event.cycle === 1 ? "首次使用时会先建立 Apple 查询会话，通常需要几秒。" : ""}`,
@@ -219,7 +225,7 @@ function applyEvent(event: WatcherEvent): void {
         // 不可靠的：某些故障路径下状态压根没被更新。
         trouble: event.healthy ? null : state.trouble,
       });
-      const lines = describeCycleRows(event.cycle, event.snapshot, previousBrowserFailure);
+      const lines = describeCycleRows(event.cycle, event.snapshot.filter(row => !streamedRows.has(targetKey(row.target))), previousBrowserFailure);
       if (previousBrowserFailure !== null && event.requestCount > 0 && describeBrowserFailure(event.snapshot) === null) {
         lines.unshift("浏览器启动故障已解除。");
       }

@@ -29,6 +29,7 @@ mod checkout_login;
 mod chromium_fetcher;
 mod clash;
 mod duo;
+mod proxy;
 mod route_pool;
 #[cfg(windows)]
 mod windows_chromium;
@@ -1527,6 +1528,11 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            proxy::proxy_settings,
+            proxy::proxy_import,
+            proxy::proxy_enable,
+            proxy::proxy_remove,
+            proxy::proxy_test,
             list_regions,
             list_categories,
             list_delivery_localities,
@@ -1575,6 +1581,7 @@ pub fn run() {
 
 /// 停掉监控并关闭查询与下单两个浏览器。可以重复调用。
 async fn release_browsers(app: &AppHandle) {
+    proxy::shutdown().await;
     let Some(state) = app.try_state::<AppState>() else {
         return;
     };

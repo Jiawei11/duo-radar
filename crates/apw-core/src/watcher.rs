@@ -360,7 +360,8 @@ async fn run_queries<F: Fetcher>(
     groups: Vec<StoreGroup>,
     concurrency: usize,
     delivery_region: Option<DeliveryRegion>,
-) -> Vec<StoreOutcome> {
+    progress: mpsc::UnboundedSender<StoreOutcome>,
+) {
     client.begin_cycle().await;
     let query_targets: Vec<_> = groups.iter().map(|group| group.targets.clone()).collect();
     client.plan_cycle(&query_targets).await;
@@ -383,10 +384,11 @@ async fn run_queries<F: Fetcher>(
         });
     }
 
-    let mut outcomes = Vec::new();
     while let Some(joined) = set.join_next().await {
         match joined {
-            Ok(outcome) => outcomes.push(outcome),
+            Ok(outcome) => {
+                let _ = progress.send(outcome);
+            }
             Err(err) => {
                 // 子任务 panic 了。Rust 不像 Go 那样会带走整个进程，但绝不能
                 // 当作没发生 —— 这些目标的状态必须被标成未知，否则它们会停在
@@ -394,7 +396,7 @@ async fn run_queries<F: Fetcher>(
                 //
                 // JoinError 拿不到是哪个门店，所以这里只发告警；具体目标的状态
                 // 由调度层按「本轮没收到结果」统一处理。
-                outcomes.push(StoreOutcome {
+                let _ = progress.send(StoreOutcome {
                     locale: String::new(),
                     store_number: String::new(),
                     parts: Vec::new(),
@@ -408,7 +410,6 @@ async fn run_queries<F: Fetcher>(
             }
         }
     }
-    outcomes
 }
 
 async fn query_one_store<F: Fetcher>(
@@ -640,35 +641,51 @@ impl<F: Fetcher> Engine<F> {
                 target_count: expected.len(),
             });
             let queried_delivery_region = self.config.delivery_region.clone();
+            let (progress_tx, mut progress_rx) = mpsc::unbounded_channel();
+            let mut remaining = expected;
+            let mut counts = (0usize, 0usize);
+            let query_client = self.client.clone();
             let queries = run_queries(
-                self.client.clone(),
+                query_client,
                 groups,
                 self.config.concurrency,
                 self.config.delivery_region.clone(),
+                progress_tx,
             );
             tokio::pin!(queries);
 
-            let outcomes = loop {
+            let completed = loop {
                 tokio::select! {
-                    // 优先把本轮跑完，避免命令频繁到来时把查询饿死。
+                    // Process Stop/remove commands before publishing newly completed batches.
                     biased;
-                    outcomes = &mut queries => break Some(outcomes),
                     maybe = cmd_rx.recv() => match maybe {
                         Some(Command::Stop(reply)) => {
-                            // 离开这个循环时 queries 被丢弃，本轮作废。
                             self.set_running(false).await;
                             let _ = reply.send(());
-                            break None;
+                            break false;
                         }
                         Some(cmd) => self.handle_command(cmd).await,
                         None => return,
                     },
+                    Some(mut outcome) = progress_rx.recv() => {
+                        if queried_delivery_region != self.config.delivery_region {
+                            for (_, _, details) in &mut outcome.parts {
+                                if let Some(details) = details {
+                                    details.sale_reason = None;
+                                    details.sale_message = None;
+                                }
+                            }
+                        }
+                        let batch = self.apply_outcomes(&mut remaining, vec![outcome]).await;
+                        counts.0 += batch.0;
+                        counts.1 += batch.1;
+                    },
+                    () = &mut queries => break true,
                 }
             };
-
-            let Some(mut outcomes) = outcomes else {
+            if !completed {
                 continue;
-            };
+            }
 
             let stats = self.client.cycle_stats().await;
             let schedule_hint = self.client.schedule_hint(&locales).await;
@@ -690,8 +707,12 @@ impl<F: Fetcher> Engine<F> {
                     other => self.handle_command(other).await,
                 }
             }
-            if queried_delivery_region != self.config.delivery_region {
-                for outcome in &mut outcomes {
+            if aborted {
+                continue;
+            }
+
+            while let Ok(mut outcome) = progress_rx.try_recv() {
+                if queried_delivery_region != self.config.delivery_region {
                     for (_, _, details) in &mut outcome.parts {
                         if let Some(details) = details {
                             details.sale_reason = None;
@@ -699,17 +720,17 @@ impl<F: Fetcher> Engine<F> {
                         }
                     }
                 }
-            }
-            if aborted {
-                continue;
+                let batch = self.apply_outcomes(&mut remaining, vec![outcome]).await;
+                counts.0 += batch.0;
+                counts.1 += batch.1;
             }
 
             let delay = self
                 .apply(
                     cycle,
                     started_at.elapsed().as_millis().min(u128::from(u64::MAX)) as u64,
-                    expected,
-                    outcomes,
+                    remaining,
+                    counts,
                     stats,
                     schedule_hint,
                 )
@@ -870,20 +891,15 @@ impl<F: Fetcher> Engine<F> {
         groups
     }
 
-    /// 把一轮的结果写进状态，并发出相应事件。
-    async fn apply(
+    /// Publish each store batch as soon as it completes; final snapshots reconcile dropped UI events.
+    async fn apply_outcomes(
         &mut self,
-        cycle: u64,
-        elapsed_ms: u64,
-        mut missing: BTreeSet<TargetKey>,
+        missing: &mut BTreeSet<TargetKey>,
         outcomes: Vec<StoreOutcome>,
-        stats: CycleStats,
-        schedule_hint: ScheduleHint,
-    ) -> Duration {
-        let mut ok = 0usize;
-        let mut problems = 0usize;
+    ) -> (usize, usize) {
+        let mut ok = 0;
+        let mut problems = 0;
         let now = now_ms();
-
         for outcome in outcomes {
             if outcome.ok {
                 ok += 1;
@@ -916,8 +932,8 @@ impl<F: Fetcher> Engine<F> {
                     delivery.merge_into(&mut pickup_details);
                 }
 
-                let previous = std::mem::replace(&mut state.availability, availability);
-                let previous_details = std::mem::replace(&mut state.pickup_details, pickup_details);
+                state.availability = availability;
+                state.pickup_details = pickup_details;
                 state.last_checked_ms = Some(now);
                 if state.availability.is_failure() {
                     state.consecutive_failures = state.consecutive_failures.saturating_add(1);
@@ -926,12 +942,9 @@ impl<F: Fetcher> Engine<F> {
                 }
 
                 let snapshot = state.clone();
-                if previous != snapshot.availability || previous_details != snapshot.pickup_details
-                {
-                    self.emit_droppable(Event::StateChanged {
-                        state: snapshot.clone(),
-                    });
-                }
+                self.emit_droppable(Event::StateChanged {
+                    state: snapshot.clone(),
+                });
                 if snapshot.availability.is_in_stock() {
                     // 用户要求每一轮只要确认有货就重新提醒。这样持续有货时也会按
                     // 查询间隔重复响铃、打开购物袋，而不是只有第一次变为有货才执行。
@@ -939,6 +952,22 @@ impl<F: Fetcher> Engine<F> {
                 }
             }
         }
+
+        (ok, problems)
+    }
+
+    /// 把一轮的结果写进状态，并发出相应事件。
+    async fn apply(
+        &mut self,
+        cycle: u64,
+        elapsed_ms: u64,
+        missing: BTreeSet<TargetKey>,
+        counts: (usize, usize),
+        stats: CycleStats,
+        schedule_hint: ScheduleHint,
+    ) -> Duration {
+        let (ok, mut problems) = counts;
+        let now = now_ms();
 
         // 请求发出去了却没拿回结果的目标，落回未知并说明原因。
         // 唯一已知成因是查询子任务 panic —— 那时 JoinError 说不出是哪个门店。

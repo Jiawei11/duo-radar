@@ -20,7 +20,7 @@ Duo Radar is a minimal Windows app for monitoring US Apple Store pickup stock. C
 
 ### Get started
 
-1. Download `DuoRadar-1.4.0-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
+1. Download `DuoRadar-1.4.3-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
 2. The app starts in **English**. Use the **English / 中文** selector at the top to switch languages. Your preference is saved on this computer; switching does not reset monitors or selections.
 3. Search any US store, or use the Dallas, Austin and Houston shortcuts covering 14 Texas stores. Select configurations, click **Add monitors**, then **Start monitoring**.
 4. When stock is found, click **Add to cart** on the matching row. Wait for its completion message, then choose the actual pickup store and finish manually on Apple.
@@ -92,7 +92,7 @@ Duo Radar 是极简的 Windows 美国 Apple Store 取货监控工具，专注 **
 
 ### 开始使用
 
-1. 下载 `DuoRadar-1.4.0-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
+1. 下载 `DuoRadar-1.4.3-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
 2. 首次默认显示 English，顶部 **English / 中文** 可即时切换并记住选择；不会清空监控或已选配置。
 3. 搜索全美国门店，或使用 Dallas、Austin、Houston 的 14 家德州门店快捷按钮。选择配置，点击“添加监控”，再“开始监控”。
 4. 看到有货后点击对应行“加购”，等待完成提示，再自行选择实际取货门店和完成后续流程。
@@ -124,3 +124,14 @@ Duo Radar 是极简的 Windows 美国 Apple Store 取货监控工具，专注 **
 Jiawei11 维护本版；感谢直接上游 suversal / 果到雷达、ENCHIGO、hteen 及全部上游贡献者。OpenAI Codex / ChatGPT 协助美国适配、界面、双语、测试、文档和打包。保留全部上游 Git 历史、版权与来源，不声称基础代码为本版原创；AI 协作在此明确致谢。
 
 继续使用 **GPL-3.0-or-later**，正式许可原文 [LICENSE](LICENSE) 不作改写，来源及修改见 [NOTICE](NOTICE)，发布时提供对应源码。上游历史文档保留原文并附英文导读，不应当作本版当前功能说明。
+
+
+## Proxy settings / 代理设置
+
+Open **Proxy** at the top right and select **Import proxies**. Paste one `IP:PORT:USER:PASSWORD` per line; confirm to append and deduplicate. The page displays each proxy and offers **Test** / **Test all** against `https://www.apple.com/shop` (three tests concurrently, 25-second request timeout). Successful HTTP responses show elapsed milliseconds; failures remain visible. These tests check connectivity, not inventory availability.
+
+Enable **Proxy** in the monitor settings to route each inventory query batch through the next proxy. The cursor continues between cycles, including when there are fewer tasks than proxies. A query batch may contain multiple models for one store. Up to four store batches run concurrently. Up to 32 isolated proxy sessions remain resident and are reused across cycles; a set of 25 proxies no longer restarts on every rotation. Each completed store updates and notifies immediately. Retaining more sessions uses more memory. A failed request is reported without a direct-network fallback. Toggling off affects the next batch; an already running batch finishes on its previous route. Cart actions retain the original connection. Credentials are encrypted under the current Windows account in the app configuration directory and never included in source archives.
+
+点击右上角 **Proxy → 导入 Proxy**，每行粘贴一条 `IP:PORT:USER:PASSWORD`。确认后追加并去重，可查看每条代理并进行单条或全部测试。测试访问 `https://www.apple.com/shop`，最多同时测试三条，请求超时 25 秒；HTTP 响应显示耗时，失败显示错误。这是连通性测试，不代表库存查询结果。
+
+在主页面监控设置中打开 **Proxy**，每个库存查询批次依次使用下一条代理，轮询位置跨轮次保留，任务少于代理数量时也会逐轮使用全部代理。同一门店多个型号可能合并为一个批次。最多四个门店批次并发查询，最多保留 32 个隔离代理会话跨轮次复用；25 条代理不再每次轮询都重启浏览器。每家门店查完立即更新与提醒。保留更多会话会增加内存占用。失败时显示错误，不自动转直连。关闭开关对下一批生效，正在执行的批次仍使用原线路。加购继续使用原有连接。凭据在应用配置目录由 Windows 当前账户加密保存，不打包进源码。

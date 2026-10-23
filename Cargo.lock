@@ -71,9 +71,10 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
 name = "apple-store-inventory-monitor"
-version = "1.4.0"
+version = "1.4.3"
 dependencies = [
  "apw-core",
+ "base64 0.22.1",
  "dirs",
  "futures-util",
  "libc",
@@ -93,7 +94,7 @@ dependencies = [
 
 [[package]]
 name = "apw-core"
-version = "1.4.0"
+version = "1.4.3"
 dependencies = [
  "dirs",
  "dom_query",

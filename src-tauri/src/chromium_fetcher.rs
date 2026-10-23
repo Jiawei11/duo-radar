@@ -1431,6 +1431,7 @@ impl CyclePickupRejection {
 
 #[derive(Debug, Default)]
 struct QueryState {
+    proxy_port: Option<u16>,
     session: Option<ChromiumSession>,
     /// 本轮启动浏览器会话失败后不再为每个门店重复启动。
     /// 新一轮会清空并再次尝试，重试节奏仍由用户设置决定。
@@ -1971,6 +1972,23 @@ impl QueryState {
 }
 
 impl AppleChromiumFetcher {
+    pub(crate) fn with_proxy(profile_dir: PathBuf, port: u16) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(QueryState {
+                proxy_port: Some(port),
+                ..QueryState::default()
+            })),
+            profile_dir,
+        }
+    }
+
+    pub(crate) async fn reset_proxy_batch(&self) {
+        self.state.lock().await.begin_cycle();
+    }
+    pub(crate) async fn proxy_request_count(&self) -> u32 {
+        self.state.lock().await.gate.cycle_request_count
+    }
+
     pub fn new() -> Self {
         Self {
             state: Arc::new(Mutex::new(QueryState::default())),
@@ -2024,7 +2042,7 @@ impl AppleChromiumFetcher {
         self.state.lock().await.set_network(network);
     }
 
-    async fn pickup(
+    pub(crate) async fn pickup(
         &self,
         region: &'static Region,
         store_number: &str,
@@ -2100,7 +2118,13 @@ impl AppleChromiumFetcher {
             (BrowserPayload { status: 200, body }, true)
         } else {
             if guard.session.is_none() {
-                let network_args = chromium_network_args(&guard.network);
+                let network_args = match guard.proxy_port {
+                    Some(port) => vec![
+                        format!("--proxy-server=http://127.0.0.1:{port}"),
+                        "--disable-quic".into(),
+                    ],
+                    None => chromium_network_args(&guard.network),
+                };
                 match ChromiumSession::start_with_args(self.profile_dir.clone(), &network_args)
                     .await
                 {
@@ -2371,6 +2395,7 @@ impl AppleChromiumFetcher {
 
 impl Fetcher for AppleChromiumFetcher {
     async fn begin_cycle(&self) {
+        crate::proxy::begin_cycle();
         self.state.lock().await.begin_cycle();
     }
 
@@ -2388,6 +2413,9 @@ impl Fetcher for AppleChromiumFetcher {
     }
 
     async fn cycle_stats(&self) -> CycleStats {
+        if crate::proxy::active().await {
+            return crate::proxy::cycle_stats();
+        }
         let state = self.state.lock().await;
         CycleStats {
             request_count: state.gate.cycle_request_count,
@@ -2397,6 +2425,9 @@ impl Fetcher for AppleChromiumFetcher {
     }
 
     async fn schedule_hint(&self, locales: &[String]) -> ScheduleHint {
+        if crate::proxy::active().await {
+            return ScheduleHint::default();
+        }
         self.state.lock().await.schedule_hint(locales)
     }
 
@@ -2411,6 +2442,9 @@ impl Fetcher for AppleChromiumFetcher {
         targets: &[Target],
         delivery_region: Option<&DeliveryRegion>,
     ) -> Result<StoreAvailability, ApiError> {
+        if crate::proxy::active().await {
+            return crate::proxy::pickup(region, store_number, targets, delivery_region).await;
+        }
         let result = self
             .pickup(region, store_number, targets, delivery_region)
             .await;
