@@ -10,6 +10,8 @@
  * 设计的，而我们的数据源正是 Rust。再套一层状态库只会制造「再存一份」的诱惑。
  */
 
+import { createStockPriority } from "./stockPriority";
+
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -46,6 +48,7 @@ const MAX_LOG_LINES = 300;
 
 export interface UiState {
   rows: TargetState[];
+  displayRows: TargetState[];
   running: boolean;
   /** 调度器给出的真实下一轮时间；保护冷却会反映在这里。 */
   nextCheckAtMs: number | null;
@@ -123,6 +126,7 @@ const DEFAULT_SETTINGS: Settings = {
 
 let state: UiState = {
   rows: [],
+  displayRows: [],
   running: false,
   nextCheckAtMs: null,
   cooling: false,
@@ -163,8 +167,10 @@ function subscribe(cb: () => void): () => void {
   };
 }
 
+const stockPriority = createStockPriority();
+
 function update(patch: Partial<UiState>): void {
-  state = { ...state, ...patch };
+  state = { ...state, ...patch, ...(patch.rows ? { displayRows: stockPriority(patch.rows) } : {}) };
   for (const cb of listeners) cb();
 }
 

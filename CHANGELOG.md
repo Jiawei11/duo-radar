@@ -1,5 +1,14 @@
 # Changelog / 更新记录
 
+## 1.4.5 · In-stock tasks first / 有货任务置顶
+
+- Immediately move in-stock tasks to the top, newest discovery first. Continuous availability keeps its original discovery order across refreshes.
+  查到有货立即置顶，最新发现的排在最上面；持续有货时保持发现顺序，刷新不会打乱。
+- Remove priority when a task is no longer in stock; a new restock gets a new discovery time. Equal timestamps retain the original task order.
+  不再有货时取消置顶，再次到货重新计时；时间相同则保持原任务顺序。
+- Sorting affects display only; saved tasks, query scheduling, cart actions and alerts remain unchanged. Discovery times are tracked for the current app session.
+  排序仅影响显示，不改变保存的任务、查询调度、加购和提醒；发现时间在当前运行期间记录。
+
 ## 1.4.4 · Bark and signed updates / Bark 与签名更新
 
 - Restore configurable Bark phone alerts with model, store and ZIP; add a test push and preserve settings across restarts.

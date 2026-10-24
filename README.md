@@ -20,7 +20,7 @@ Duo Radar is a minimal Windows app for monitoring US Apple Store pickup stock. C
 
 ### Get started
 
-1. Download `DuoRadar-1.4.4-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
+1. Download `DuoRadar-1.4.5-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
 2. The app starts in **English**. Use the **English / 中文** selector at the top to switch languages. Your preference is saved on this computer; switching does not reset monitors or selections.
 3. Search any US store, or use the Dallas, Austin and Houston shortcuts covering 14 Texas stores. Select configurations, click **Add monitors**, then **Start monitoring**.
 4. When stock is found, click **Add to cart** on the matching row. Wait for its completion message, then choose the actual pickup store and finish manually on Apple.
@@ -92,7 +92,7 @@ Duo Radar 是极简的 Windows 美国 Apple Store 取货监控工具，专注 **
 
 ### 开始使用
 
-1. 下载 `DuoRadar-1.4.4-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
+1. 下载 `DuoRadar-1.4.5-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
 2. 首次默认显示 English，顶部 **English / 中文** 可即时切换并记住选择；不会清空监控或已选配置。
 3. 搜索全美国门店，或使用 Dallas、Austin、Houston 的 14 家德州门店快捷按钮。选择配置，点击“添加监控”，再“开始监控”。
 4. 看到有货后点击对应行“加购”，等待完成提示，再自行选择实际取货门店和完成后续流程。

@@ -30,6 +30,32 @@ test("completed rows update and log immediately; final snapshot reconciles witho
   emit({type:"cycleComplete",cycle:1,elapsedMs:100,requestCount:2,reusedResponseCount:0,nextCheckInSecs:30,cooling:false,healthy:true,snapshot:[row("A","in_stock",10),row("B","out_of_stock",20)]});
   assert.equal(store.watcherStore.getSnapshot().rows[1].lastCheckedMs,20);
   assert.equal(store.watcherStore.getSnapshot().logs.filter(l=>l.includes("[A]")).length,1);
+  emit({type:"stateChanged",state:row("B","in_stock",25)});
+  assert.deepEqual(store.watcherStore.getSnapshot().displayRows.map(r=>r.target.partNumber),["B","A"]);
+  assert.deepEqual(store.watcherStore.getSnapshot().rows.map(r=>r.target.partNumber),["A","B"]);
+  emit({type:"cycleComplete",cycle:2,elapsedMs:100,requestCount:2,reusedResponseCount:0,nextCheckInSecs:30,cooling:false,healthy:true,snapshot:[row("A","in_stock",40),row("B","in_stock",35)]});
+  assert.deepEqual(store.watcherStore.getSnapshot().displayRows.map(r=>r.target.partNumber),["B","A"]);
   emit({type:"stateChanged",state:row("deleted","in_stock",30)});
   assert.equal(store.watcherStore.getSnapshot().rows.length,2);
+});
+
+
+test("stock priority is immediate, newest first, stable across snapshots, and resets on restock/removal", async () => {
+  const { createStockPriority } = await import("../src/lib/stockPriority.ts");
+  const sort = createStockPriority();
+  const row = (part, kind = "out_of_stock", time = 1) => ({
+    target: { locale: "en_US", storeNumber: `R-${part}`, partNumber: part },
+    availability: { kind }, lastCheckedMs: time,
+  });
+  const ids = rows => rows.map(r => r.target.partNumber);
+  const initial = [row("A"), row("B"), row("C")];
+  assert.deepEqual(ids(sort(initial)), ["A", "B", "C"]);
+  assert.deepEqual(ids(sort([row("A"), row("B", "in_stock", 10), row("C")])), ["B", "A", "C"]);
+  assert.deepEqual(ids(sort([row("A"), row("B", "in_stock", 10), row("C", "in_stock", 20)])), ["C", "B", "A"]);
+  assert.deepEqual(ids(sort([row("A"), row("B", "in_stock", 40), row("C", "in_stock", 30)])), ["C", "B", "A"]);
+  sort([row("A"), row("B", "out_of_stock", 50), row("C", "in_stock", 50)]);
+  assert.deepEqual(ids(sort([row("A"), row("B", "in_stock", 60), row("C", "in_stock", 60)])), ["B", "C", "A"]);
+  sort([]);
+  assert.deepEqual(ids(sort([row("A"), row("B", "in_stock", 70), row("C", "in_stock", 70)])), ["B", "C", "A"]);
+  assert.deepEqual(ids(initial), ["A", "B", "C"]);
 });
