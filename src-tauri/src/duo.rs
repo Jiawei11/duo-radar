@@ -16,7 +16,7 @@ pub fn restrict(settings: &mut Settings, catalog: &Catalog) {
     settings.delivery_region = None;
     settings.checkout.enabled = false;
     settings.checkout.place_order = false;
-    settings.bark_url.clear();
+    settings.bark_url = settings.bark_url.trim().to_owned();
     settings.product_bark_urls.clear();
     settings.open_on_hit = apw_core::config::OpenOnHit::None;
     let products = catalog.products("en_US").unwrap_or_default();
@@ -57,7 +57,14 @@ mod tests {
         assert!(!settings.checkout.enabled);
         assert_eq!(settings.open_on_hit, apw_core::config::OpenOnHit::None);
         assert!(settings.delivery_region.is_none());
-        assert!(settings.bark_url.is_empty());
+        assert_eq!(settings.bark_url, "https://example.invalid/old-key");
         assert_eq!(settings.locale, "en_US");
+        let saved = serde_json::to_string(&settings).unwrap();
+        let mut restored: Settings = serde_json::from_str(&saved).unwrap();
+        restrict(&mut restored, &catalog);
+        assert_eq!(restored.bark_url, settings.bark_url);
+        restored.bark_url.clear();
+        restrict(&mut restored, &catalog);
+        assert!(restored.bark_url.is_empty());
     }
 }

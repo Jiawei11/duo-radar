@@ -1,0 +1,1 @@
+Duo Radar updater test fixture. Not an executable.

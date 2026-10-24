@@ -20,7 +20,7 @@ Duo Radar is a minimal Windows app for monitoring US Apple Store pickup stock. C
 
 ### Get started
 
-1. Download `DuoRadar-1.4.3-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
+1. Download `DuoRadar-1.4.4-setup.exe` to install, or run `DuoRadar.exe` directly. Requires Windows 10/11 x64 and Google Chrome or Microsoft Edge.
 2. The app starts in **English**. Use the **English / 中文** selector at the top to switch languages. Your preference is saved on this computer; switching does not reset monitors or selections.
 3. Search any US store, or use the Dallas, Austin and Houston shortcuts covering 14 Texas stores. Select configurations, click **Add monitors**, then **Start monitoring**.
 4. When stock is found, click **Add to cart** on the matching row. Wait for its completion message, then choose the actual pickup store and finish manually on Apple.
@@ -35,7 +35,7 @@ The monitor list shows each store’s city, state and ZIP. **Clear list** pauses
 - A separate browser/cart for each **store + configuration**, isolated from your everyday Chrome/Edge profile.
 - A row’s cart flow selects no trade-in, full payment, connect to a carrier later and no AppleCare; verifies the exact SKU and quantity **1**; then performs **Check Out → Continue as Guest → I’ll pick it up → store ZIP → Apply**.
 - Automation stops after the ZIP editor closes and pickup store results load. **It does not choose a store, click Continue to Pickup Details, enter contact/payment information or place an order.** Reopening a prepared row brings its existing browser forward and preserves manual progress.
-- No Bark push, mainland-China delivery settings, other product categories or automatic browser opening on stock events.
+- Optional Bark phone alerts; no mainland-China delivery settings, other product categories or automatic browser opening on stock events.
 
 Apple’s product names, store names, pickup quotes and unrecognized external diagnostics remain verbatim for accurate comparison. App controls, statuses and common diagnostics support English and Chinese. The selected UI language is stored locally in the WebView; settings and dedicated browser profiles are under `%APPDATA%\duo-radar\`.
 
@@ -62,7 +62,7 @@ pnpm tauri dev
 pnpm test
 pnpm build
 cargo test --workspace --lib --tests
-pnpm tauri build --bundles nsis
+pnpm tauri build --bundles nsis --config .github/unsigned-build.json
 ```
 
 Build outputs: `target/release/` and `target/release/bundle/nsis/`. VS Code tasks provide development, build and live-test commands. Live tests are opt-in:
@@ -92,7 +92,7 @@ Duo Radar 是极简的 Windows 美国 Apple Store 取货监控工具，专注 **
 
 ### 开始使用
 
-1. 下载 `DuoRadar-1.4.3-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
+1. 下载 `DuoRadar-1.4.4-setup.exe` 安装，或直接运行 `DuoRadar.exe`。需要 Windows 10/11 x64 和 Chrome 或 Edge。
 2. 首次默认显示 English，顶部 **English / 中文** 可即时切换并记住选择；不会清空监控或已选配置。
 3. 搜索全美国门店，或使用 Dallas、Austin、Houston 的 14 家德州门店快捷按钮。选择配置，点击“添加监控”，再“开始监控”。
 4. 看到有货后点击对应行“加购”，等待完成提示，再自行选择实际取货门店和完成后续流程。
@@ -107,7 +107,7 @@ Duo Radar 是极简的 Windows 美国 Apple Store 取货监控工具，专注 **
 - 按“门店＋配置”隔离浏览器和购物袋，不读取日常 Chrome/Edge 用户资料。
 - 每行加购会选择无折抵、全款、稍后连接运营商、不加 AppleCare，核对 SKU 与数量 1，再执行 Check Out → Continue as Guest → I’ll pick it up → 门店 ZIP → Apply。
 - ZIP 编辑框收起、门店结果加载后停止；不选门店，不点 Continue to Pickup Details，不填联系人或付款信息，不提交订单。重复点击已准备条目只显示原浏览器，保留手动进度。
-- 无 Bark、中国大陆送货地址和其他品类选择；库存事件不自动打开浏览器。
+- 可选 Bark 手机推送；无中国大陆送货地址和其他品类选择，库存事件不自动打开浏览器。
 
 控件、状态和常用诊断支持中英文。Apple 商品名、门店名、取货说明及无法识别的外部诊断保留原文，便于核对。界面语言保存在本机 WebView，设置及专用浏览器资料在 `%APPDATA%\duo-radar\`。
 
@@ -135,3 +135,21 @@ Enable **Proxy** in the monitor settings to route each inventory query batch thr
 点击右上角 **Proxy → 导入 Proxy**，每行粘贴一条 `IP:PORT:USER:PASSWORD`。确认后追加并去重，可查看每条代理并进行单条或全部测试。测试访问 `https://www.apple.com/shop`，最多同时测试三条，请求超时 25 秒；HTTP 响应显示耗时，失败显示错误。这是连通性测试，不代表库存查询结果。
 
 在主页面监控设置中打开 **Proxy**，每个库存查询批次依次使用下一条代理，轮询位置跨轮次保留，任务少于代理数量时也会逐轮使用全部代理。同一门店多个型号可能合并为一个批次。最多四个门店批次并发查询，最多保留 32 个隔离代理会话跨轮次复用；25 条代理不再每次轮询都重启浏览器。每家门店查完立即更新与提醒。保留更多会话会增加内存占用。失败时显示错误，不自动转直连。关闭开关对下一批生效，正在执行的批次仍使用原线路。加购继续使用原有连接。凭据在应用配置目录由 Windows 当前账户加密保存，不打包进源码。
+
+## Phone notifications and updates / 手机推送与软件更新
+
+In Alert settings, enter your full Bark URL and click **Save**. In-stock messages
+include the model, store and ZIP. **Test push** sends a sample message; clearing
+and saving the URL disables phone notifications. Sound alerts remain independent.
+
+在提醒设置输入完整 Bark 地址并保存。有货消息包含型号、门店和 ZIP。
+“测试推送”发送示例消息；清空地址并保存可关闭手机推送，声音提醒独立控制。
+
+**Updates** checks GitHub at startup or on demand. Downloaded updates must pass
+signature verification before you choose **Exit and install**. Portable EXE users
+will move to the installed app. Existing 1.4.3 users must manually install 1.4.4 once.
+See [update documentation](docs/updates.md) for details.
+
+“检查更新”支持启动检查和手动检查，下载并校验签名后，由你选择“退出并安装”。
+免安装版通过此流程转为安装版。现有 1.4.3 用户需要先手动安装一次 1.4.4。
+详情见[更新说明](docs/updates.md)。

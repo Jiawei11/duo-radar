@@ -1,5 +1,14 @@
 # Changelog / 更新记录
 
+## 1.4.4 · Bark and signed updates / Bark 与签名更新
+
+- Restore configurable Bark phone alerts with model, store and ZIP; add a test push and preserve settings across restarts.
+  恢复可配置的 Bark 手机推送，包含型号、门店和 ZIP；支持测试推送并在重启后保留设置。
+- Add bilingual update checks, download progress, signature verification and explicit Windows installation through GitHub Releases.
+  新增双语更新检查、下载进度、签名校验及用户确认后的 Windows 安装，使用 GitHub Releases 分发。
+- Keep notification delivery independent of inventory event processing and local sound alerts.
+  推送在后台发送，不阻塞库存事件处理；声音提醒独立控制。
+
 ## 1.4.3 · Proxy support and concurrent queries / 代理支持与并发查询
 
 - Run up to four store batches concurrently using independent proxy locks. Reuse up to 32 proxy sessions across cycles, covering the 25-proxy setup without repeated eviction.

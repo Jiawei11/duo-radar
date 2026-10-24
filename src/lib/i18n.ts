@@ -20,7 +20,7 @@ export const copy = {
   empty:["Add your first monitor","等待你的第一条监控"], failureHint:["Query failures include a reason and are never reported as out of stock.","库存查询失败会显示原因，不会被当成无货。"],
   settings:["Alert settings","提醒设置"], interval:["Query interval","查询间隔"], seconds:["s","秒"], sound:["Sound alerts","声音提醒"],
   stop:["Pause when in stock","到货后暂停"], testSound:["Test sound","测试提示音"],
-  cartHint:["Stock triggers sound only. Use a row’s Add to cart button to prepare guest pickup ZIP results; choose the store and finish manually.","有货时声音提醒。点击对应行“加购”，准备到游客取货 ZIP 搜索结果；门店选择及后续由你完成。"],
+  cartHint:["Stock triggers enabled sound and Bark alerts. Use a row’s Add to cart button to prepare guest pickup ZIP results; choose the store and finish manually.","有货时通过已启用的声音和 Bark 提醒。点击对应行“加购”，准备到游客取货 ZIP 搜索结果；门店选择及后续由你完成。"],
   logs:["Activity log","活动日志"], entries:["entries","条"], waiting:["Waiting for monitor activity…","等待监控活动…"],
   credits:["Credits: Guodao Radar / ENCHIGO / hteen · Codex (OpenAI)","开源致谢：果到雷达 / ENCHIGO / hteen · Codex（OpenAI）"],
   preparing:["Adding the item and preparing pickup search…","正在加购并准备取货搜索…"],

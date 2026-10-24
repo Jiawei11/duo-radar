@@ -1,0 +1,3 @@
+
+# Signed test payload must keep its exact bytes on every checkout.
+/src-tauri/tests/fixtures/update.txt binary

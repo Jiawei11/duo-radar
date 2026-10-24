@@ -15,7 +15,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use apw_core::catalog::Catalog;
 use apw_core::config::{ClashSettings, MIN_INTERVAL_SECONDS, Settings, SettingsStore};
 use apw_core::model::{Category, Product, REGIONS, Store, Target, region_by_locale};
-use apw_core::notify::{Notification, Notifier, Sound};
+use apw_core::notify::{Bark, Multi, Notification, Notifier, Sound};
 use apw_core::watcher::{Event, TargetState, Watcher, WatcherConfig};
 use serde::{Deserialize, Serialize};
 use tauri::menu::{Menu, MenuItem};
@@ -737,6 +737,7 @@ async fn save_settings(
     state: tauri::State<'_, AppState>,
     settings: Settings,
 ) -> Result<Settings, String> {
+    validate_bark_url(&settings.bark_url)?;
     let mut next = settings;
     next.normalize();
     duo::restrict(&mut next, &state.catalog);
@@ -958,19 +959,66 @@ async fn add_target_to_cart(app: AppHandle, target: Target) -> Result<String, St
 }
 
 /// This edition only sends local sound notifications.
+fn validate_bark_url(value: &str) -> Result<(), String> {
+    if value.trim().is_empty() {
+        return Ok(());
+    }
+    let valid = reqwest::Url::parse(value.trim()).ok().is_some_and(|url| {
+        matches!(url.scheme(), "http" | "https")
+            && url.host_str().is_some()
+            && !url.path().trim_matches('/').is_empty()
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.fragment().is_none()
+    });
+    if valid {
+        Ok(())
+    } else {
+        Err("Bark URL must include http(s) server and device key / Bark 地址需包含 http(s) 服务器和设备 key".into())
+    }
+}
+
+fn bark_client() -> reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(reqwest::Client::new).clone()
+}
+
+#[tauri::command]
+async fn test_bark(bark_url: String) -> Result<(), String> {
+    validate_bark_url(&bark_url)?;
+    if bark_url.trim().is_empty() {
+        return Err("Enter a Bark URL / 请填写 Bark 地址".into());
+    }
+    Bark::new(bark_url, bark_client()).notify(&Notification::new(
+        "Duo Radar · Test / 测试（非到货）",
+        "Model / 型号: iPhone 17 256GB Mist Blue\nStore / 门店: Dallas-Knox Street [R042]\nZIP: 75205\nSample only / 仅示例，不代表有货"
+    )).await.map_err(|error| error.to_string())
+}
+
 async fn dispatch_notification(
     app: &AppHandle,
     notification: Notification,
-    _legacy_url: &str,
+    bark_url: &str,
 ) -> Result<(), apw_core::notify::NotifyError> {
+    let mut channels = Multi::new();
     if app.state::<AppState>().settings_snapshot().sound_enabled {
-        Sound::embedded().notify(&notification).await?;
+        channels.push(Sound::embedded());
     }
-    Ok(())
+    if !bark_url.trim().is_empty() {
+        channels.push(Bark::new(bark_url.to_owned(), bark_client()));
+    }
+    channels.notify(&notification).await
 }
 
-fn in_stock_notification_body(target: &Target) -> String {
-    let mut body = format!("{} {}", target.store_title, target.product_name);
+fn in_stock_notification_body(target: &Target, store: Option<&Store>) -> String {
+    let zip = store
+        .map(|s| s.postal_code.trim())
+        .filter(|zip| !zip.is_empty())
+        .unwrap_or("Unavailable / 暂无");
+    let mut body = format!(
+        "Model / 型号: {}\nStore / 门店: {} [{}]\nZIP: {}",
+        target.product_name, target.store_title, target.store_number, zip
+    );
     if let Some(companion) = target
         .companion_part
         .as_deref()
@@ -1290,15 +1338,25 @@ async fn pump_events(app: AppHandle, mut events: tokio::sync::mpsc::Receiver<Eve
                     }
                 });
             }
-            if let Err(err) = dispatch_notification(
-                &app,
-                Notification::new("有货了", in_stock_notification_body(target)),
-                "",
-            )
-            .await
-            {
-                let _ = app.emit(NOTICE_CHANNEL, format!("声音提醒失败：{err}"));
-            }
+            let store = app.try_state::<AppState>().and_then(|s| {
+                s.catalog
+                    .store_by_number(&target.locale, &target.store_number)
+            });
+            let notification = Notification::new(
+                "Duo Radar · In stock / 有货了",
+                in_stock_notification_body(target, store.as_ref()),
+            );
+            let bark_url = settings.bark_url.clone();
+            let app = app.clone();
+            // Slow phone services must not hold up inventory events or other stores.
+            tauri::async_runtime::spawn(async move {
+                if let Err(err) = dispatch_notification(&app, notification, &bark_url).await {
+                    let _ = app.emit(
+                        NOTICE_CHANNEL,
+                        format!("Notification failed / 提醒失败：{err}"),
+                    );
+                }
+            });
         }
     }
 }
@@ -1435,6 +1493,7 @@ pub fn run() {
             }
         }))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let mut notices = Vec::new();
             let (mut settings, store) = load_settings(&mut notices);
@@ -1554,6 +1613,7 @@ pub fn run() {
             retry_watching_now,
             is_running,
             test_notify,
+            test_bark,
             add_target_to_cart,
             open_checkout_browser,
             test_checkout,
@@ -1748,6 +1808,90 @@ mod tests {
     }
 
     #[test]
+    fn bark_address_validation_does_not_echo_secrets() {
+        for value in [
+            "",
+            "  https://api.day.app/private-key  ",
+            "http://localhost:8080/key?group=radar",
+        ] {
+            assert!(super::validate_bark_url(value).is_ok());
+        }
+        for value in [
+            "private-key",
+            "https://api.day.app/",
+            "ftp://server/private-key",
+            "https://user:password@server/private-key",
+        ] {
+            let error = super::validate_bark_url(value).unwrap_err();
+            assert!(!error.contains("private-key") && !error.contains("password"));
+        }
+    }
+
+    #[tokio::test]
+    async fn bark_stock_payload_reaches_server_with_exact_model_store_and_zip() {
+        use apw_core::notify::{Bark, Notification, Notifier};
+        use std::io::{BufRead, BufReader, Write};
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            stream
+                .set_read_timeout(Some(std::time::Duration::from_secs(5)))
+                .unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut request = String::new();
+            reader.read_line(&mut request).unwrap();
+            loop {
+                let mut line = String::new();
+                reader.read_line(&mut line).unwrap();
+                if line == "\r\n" || line.is_empty() {
+                    break;
+                }
+            }
+            let body = r#"{"code":200,"message":"success"}"#;
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            )
+            .unwrap();
+            request
+        });
+        let target = Target {
+            locale: "en_US".into(),
+            store_number: "R042".into(),
+            store_title: "Dallas-Knox Street".into(),
+            part_number: "MG484LL/A".into(),
+            product_name: "iPhone 17 256GB Mist Blue".into(),
+            companion_part: None,
+            companion_name: None,
+            kit_part: None,
+            pickup_location: None,
+        };
+        let catalog = apw_core::catalog::Catalog::default();
+        let store = catalog.store_by_number("en_US", "R042").unwrap();
+        let body = in_stock_notification_body(&target, Some(&store));
+        assert!(body.contains("ZIP: 75205"));
+        assert!(body.contains("iPhone 17 256GB Mist Blue"));
+        assert!(body.contains("Dallas-Knox Street [R042]"));
+        Bark::new(
+            format!("http://{address}/test-key"),
+            reqwest::Client::builder().no_proxy().build().unwrap(),
+        )
+        .notify(&Notification::new("In stock / 有货了", body))
+        .await
+        .unwrap();
+        let request = server.join().unwrap();
+        assert!(
+            request.contains("75205")
+                && request.contains("R042")
+                && request.contains("Mist%20Blue")
+        );
+        assert!(in_stock_notification_body(&target, None).contains("ZIP: Unavailable"));
+    }
+
+    #[test]
     fn watch到货提醒明确标出送货查询使用的表带() {
         let target = Target {
             locale: "zh_CN".into(),
@@ -1760,7 +1904,7 @@ mod tests {
             kit_part: Some("Z0YQ".into()),
             pickup_location: None,
         };
-        let body = in_stock_notification_body(&target);
+        let body = in_stock_notification_body(&target, None);
         assert!(body.contains("Apple Watch Ultra 4"));
         assert!(body.contains("Watch 送货搭配表带 MKDY4FE/A"));
     }
